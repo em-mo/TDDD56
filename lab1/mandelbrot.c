@@ -149,12 +149,15 @@ parallel_mandelbrot(struct mandelbrot_thread *args, struct mandelbrot_param *par
 {
 #if LOADBALANCE == 0
 	// naive *parallel* implementation. Compiled only if LOADBALANCE = 0
-	parameters->begin_h = (parameters->height/(NB_THREADS + 1))*args->id;
+	parameters->begin_h = (parameters->height/NB_THREADS)*args->id;
 
-	if(args->id != NB_THREADS)
-		parameters->end_h = (parameters->height/(NB_THREADS + 1))*(args->id+1);
+	if(args->id != NB_THREADS-1){
+		parameters->end_h = (parameters->height/NB_THREADS)*(args->id+1);
+		printf("%d) not last\n",args->id);
+	}
 	else{
 		parameters->end_h = parameters->height;
+		printf("%d) last\n",args->id);
 	}
 
 	parameters->begin_w = 0;
@@ -173,9 +176,8 @@ parallel_mandelbrot(struct mandelbrot_thread *args, struct mandelbrot_param *par
 			pthread_mutex_unlock(counter_mutex);
 
 			calculate_new_parameters(current_row, parameters);
+			compute_chunk(parameters);
 		}
-
-		compute_chunk(parameters);
 	}
 
 #endif
