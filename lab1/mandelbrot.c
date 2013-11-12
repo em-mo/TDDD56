@@ -148,10 +148,11 @@ parallel_mandelbrot(struct mandelbrot_thread *args, struct mandelbrot_param *par
 {
 #if LOADBALANCE == 0
 	// naive *parallel* implementation. Compiled only if LOADBALANCE = 0
-	parameters->begin_h = (parameters->height/(NB_THREADS + 1))*args->id;
+	parameters->begin_h = (parameters->height/NB_THREADS)*args->id;
 
-	if(args->id != NB_THREADS)
-		parameters->end_h = (parameters->height/(NB_THREADS + 1))*(args->id+1);
+	if(args->id != NB_THREADS-1){
+		parameters->end_h = (parameters->height/NB_THREADS)*(args->id+1);
+	}
 	else{
 		parameters->end_h = parameters->height;
 	}

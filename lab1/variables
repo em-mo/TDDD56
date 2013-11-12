@@ -16,4 +16,4 @@ upper_r=0.6
 lower_i=-1
 upper_i=1
 nb_thread=`seq 0 6`			# From 0 to 8 threads
-loadbalance="0 1 2"
+loadbalance="0 1"
