@@ -121,10 +121,24 @@ compute_chunk(struct mandelbrot_param *args)
 
 /***** You may modify this portion *****/
 #if NB_THREADS > 0
+
+unsigned int row_counter = 0;
+pthread_mutex_t counter_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void
+calculate_new_parameters(unsigned int row, struct mandelbrot_param *parameters)
+{
+	parameters->begin_h = row;
+	parameters->end_h = row + 1;
+	parameters->begin_w = 0;
+	parameters->end_w = parameters->width;
+}
+
 void
 init_round(struct mandelbrot_thread *args)
 {
-	// Initialize or reinitialize here variables before any thread starts or restarts computation
+	row_counter = 0;
+	counter_mutex = PTHREAD_MUTEX_INITIALIZER;
 }
 
 /*
@@ -137,7 +151,21 @@ parallel_mandelbrot(struct mandelbrot_thread *args, struct mandelbrot_param *par
 	// naive *parallel* implementation. Compiled only if LOADBALANCE = 0
 #endif
 #if LOADBALANCE == 1
-	// Your load-balanced smarter solution. Compiled only if LOADBALANCE = 1
+	int current_row;
+	while (row_counter < parameters->height)
+	{
+		if (pthread_mutex_trylock(counter_mutex) == 0)
+		{
+			current_row = row_counter;
+			++row_counter;
+			pthread_mutex_unlock(counter_mutex);
+
+			calculate_new_parameters(current_row, parameters);
+		}
+
+		compute_chunk(parameters);
+	}
+
 #endif
 #if LOADBALANCE == 2
 	// A second *optional* load-balancing solution. Compiled only if LOADBALANCE = 2
