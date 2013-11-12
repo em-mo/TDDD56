@@ -276,7 +276,7 @@ void
 update_colors(struct mandelbrot_param* param)
 {
 	// Gradient color
-	color_t start, stop;
+	color_t start, stop, swamp, stomp, stamp;
 	// Other control variables
 	int i;
 
@@ -296,12 +296,41 @@ update_colors(struct mandelbrot_param* param)
 	stop.green = 100;
 	stop.blue = 0;
 
+	swamp.red = 150;
+	swamp.green = 150;
+	swamp.blue = 0;
+
+	stomp.red = 120;
+	stomp.green = 120;
+	stomp.blue = 250;
+
+	stamp.red = 250;
+	stamp.green = 0;
+	stamp.blue = 0;
+
 	// Initialize the color vector
 	for (i = 0; i < num_colors(param); i++)
 	{
-		color[i].green = (stop.green - start.green) * ((double) i / num_colors(param)) + start.green;
-		color[i].red = (stop.red - start.red) * ((double) i / num_colors(param)) + start.red;
-		color[i].blue = (stop.blue - start.blue) * ((double) i / num_colors(param)) + start.blue;
+		switch(i % 5)
+		{
+			case 0:
+				color[i] = start;
+				break;
+			case 1:
+				color[i] = stop;
+				break;
+			case 2:
+				color[i] = swamp;		
+				break;
+			case 3:
+				color[i] = stomp;		
+				break;
+			case 4:
+				color[i] = stamp;		
+				break;
+			default:
+				break;
+		}
 	}
 }
 
