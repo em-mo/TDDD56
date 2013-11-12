@@ -108,7 +108,6 @@ compute_chunk(struct mandelbrot_param *args)
 			// Gets the value returned by is_in_mandelbrot() and scale it
 			// from 0 to 255, or -1 if (Cre, Cim) is in the mandelbrot set.
 			val = is_in_Mandelbrot(Cre, Cim, args->maxiter);
-
 			// Change a negative value to 0 in val to make mandelbrot
 			// elements to appear black in the final picture.
 			pixel = val > args->maxiter ? args->mandelbrot_color : color[val
@@ -138,7 +137,7 @@ void
 init_round(struct mandelbrot_thread *args)
 {
 	row_counter = 0;
-	counter_mutex = PTHREAD_MUTEX_INITIALIZER;
+	pthread_mutex_init(&counter_mutex, NULL);
 }
 
 /*
@@ -164,16 +163,19 @@ parallel_mandelbrot(struct mandelbrot_thread *args, struct mandelbrot_param *par
 #endif
 #if LOADBALANCE == 1
 	int current_row;
-	while (row_counter < parameters->height)
+	while (1)
 	{
-		if (pthread_mutex_trylock(counter_mutex) == 0)
+		pthread_mutex_lock(&counter_mutex);
+		if (row_counter >= parameters->height)
 		{
-			current_row = row_counter;
-			++row_counter;
-			pthread_mutex_unlock(counter_mutex);
-
-			calculate_new_parameters(current_row, parameters);
+			pthread_mutex_unlock(&counter_mutex);
+			break;
 		}
+		current_row = row_counter;
+		++row_counter;
+		pthread_mutex_unlock(&counter_mutex);
+
+		calculate_new_parameters(current_row, parameters);
 
 		compute_chunk(parameters);
 	}
@@ -284,13 +286,13 @@ update_colors(struct mandelbrot_param* param)
 	color = malloc(sizeof(color_t) * num_colors(param));
 
 	// Start color
-	start.red = 219;
-	start.green = 57;
-	start.blue = 0;
+	start.red = 205;
+	start.green = 0;
+	start.blue = 100;
 
 	// Stop color
 	stop.red = 0;
-	stop.green = 0;
+	stop.green = 100;
 	stop.blue = 0;
 
 	// Initialize the color vector
