@@ -153,11 +153,9 @@ parallel_mandelbrot(struct mandelbrot_thread *args, struct mandelbrot_param *par
 
 	if(args->id != NB_THREADS-1){
 		parameters->end_h = (parameters->height/NB_THREADS)*(args->id+1);
-		printf("%d) not last\n",args->id);
 	}
 	else{
 		parameters->end_h = parameters->height;
-		printf("%d) last\n",args->id);
 	}
 
 	parameters->begin_w = 0;
