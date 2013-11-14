@@ -84,7 +84,7 @@ stack_init(stack_t *stack, size_t size)
 
 #if NON_BLOCKING == 0
   // Implement a lock_based stack
-  pthread_mutex_init(&counter_mutex, NULL); 
+  pthread_mutex_init(&stack_mutex, NULL); 
 #elif NON_BLOCKING == 1
   /*** Optional ***/
   // Implement a harware CAS-based stack
@@ -115,13 +115,15 @@ int
 stack_push(stack_t *stack, void* buffer)
 {
     stack_t *new_item = stack_alloc();
-    new_item->buffer;
+
 #if NON_BLOCKING == 0
   // Implement a lock_based stack
-    pthread_mutex_lock(&counter_mutex);
-    new_item->next = stack;
-    stack = new_item;
-    pthread_mutex_unlock(&counter_mutex);
+    pthread_mutex_lock(&stack_mutex);
+    new_item->data = stack->data;
+    new_item->next = stack->next;
+    stack->next = new_item;
+    stack->data = buffer;
+    pthread_mutex_unlock(&stack_mutex);
 #elif NON_BLOCKING == 1
   /*** Optional ***/
   // Implement a harware CAS-based stack
@@ -137,9 +139,13 @@ stack_pop(stack_t *stack, void* buffer)
 {
 #if NON_BLOCKING == 0
   // Implement a lock_based stack
-    pthread_mutex_lock(&counter_mutex);
-    stack = stack->next;
-    pthread_mutex_unlock(&counter_mutex);
+    pthread_mutex_lock(&stack_mutex);
+    stack_t *old_item = stack->next;
+    stack->data = stack->next->data;
+    stack->next = stack->next->next;
+    pthread_mutex_unlock(&stack_mutex);
+    
+    free(old_item);
 #elif NON_BLOCKING == 1
   /*** Optional ***/
   // Implement a harware CAS-based stack
