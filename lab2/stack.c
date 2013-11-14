@@ -82,6 +82,9 @@ stack_init(stack_t *stack, size_t size)
   assert(stack != NULL);
   assert(size > 0);
 
+  stack->next = NULL;
+  stack->data = NULL;
+
 #if NON_BLOCKING == 0
   // Implement a lock_based stack
   pthread_mutex_init(&stack_mutex, NULL); 
@@ -119,16 +122,27 @@ stack_push(stack_t *stack, void* buffer)
 #if NON_BLOCKING == 0
   // Implement a lock_based stack
     pthread_mutex_lock(&stack_mutex);
+
     new_item->data = stack->data;
     new_item->next = stack->next;
     stack->next = new_item;
     stack->data = buffer;
+
     pthread_mutex_unlock(&stack_mutex);
+
 #elif NON_BLOCKING == 1
   /*** Optional ***/
   // Implement a harware CAS-based stack
 #else
   // Implement a harware CAS-based stack
+
+//WIP
+/*    stack_t *old_item;
+    do{
+	old_item = stack->next;
+	new_item->next = stack->next;
+	cas(stack->next, old_item, new_item);
+	}while(new_item != old_item)*/
 #endif
 
   return 0;
