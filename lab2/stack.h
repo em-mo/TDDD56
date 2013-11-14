@@ -30,7 +30,8 @@
 struct stack
 {
   // This is a fake structure; change it to your needs
-  int change_this_member;
+    void* data;
+    stack* next;
 };
 
 typedef struct stack stack_t;
