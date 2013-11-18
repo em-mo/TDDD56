@@ -169,14 +169,13 @@ stack_pop(stack_t **stack, void *buffer)
     /*** Optional ***/
     // Implement a harware CAS-based stack
 #else
-    stack_t* next;
+    stack_t* next, *old, *b;
+    b = (stack_t*)buffer;
     do {
-	printf("before\n");
-        buffer = *stack;
-	printf("buffer\n");
+        old = *stack;
+        *b = **stack;
         next = (*stack)->next;
-	printf("next\n");
-    } while (cas((size_t*)stack, (size_t)buffer, (size_t)next) != (size_t)buffer);
+    } while (cas((size_t*)stack, (size_t)old, (size_t)next) != (size_t)old);
 #endif
 
     return 0;

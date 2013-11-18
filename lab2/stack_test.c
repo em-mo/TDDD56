@@ -120,6 +120,7 @@ void *
 thread_test_stack_pop(void *data)
 {
     int i;
+
     for (i = 0; i < MAX_PUSH_POP; i++)
     {
         stack_pop(&stack, data);
@@ -205,7 +206,7 @@ test_pop_safe()
 
     for (i = 0; i < NB_THREADS; i++)
     {
-        int x;
+        stack_t x;
         pthread_create(&thread[i], &attr, &thread_test_stack_pop, &x);
     }
 
@@ -213,7 +214,6 @@ test_pop_safe()
     {
         pthread_join(thread[i], NULL);
     }
-
     while (stack->next != NULL)
     {
         counter++;
@@ -333,15 +333,18 @@ thread_two(void* arg)
 {
     stack_t* first_item = NULL, *second_item = NULL;
     
+    first_item = (stack_t*) malloc(sizeof(stack_t));
+    second_item = (stack_t*) malloc(sizeof(stack_t));
+
     lock_aba_lock(2);
     unlock_aba_lock(2);
     lock_aba_lock(1);
     unlock_aba_lock(1);
 
     stack_pop(&stack, first_item);
-    //printf("thread two popped: %c\n", *((char*)(first_item->data)));
+    printf("thread two popped: %c\n", *((char*)(first_item->data)));
     stack_pop(&stack, second_item);
-    //printf("thread two popped: %c\n", *((char*)(second_item->data)));
+    printf("thread two popped: %c\n", *((char*)(second_item->data)));
     stack_push(&stack, arg);
     printf("thread two pushed a\n");
     return NULL;
@@ -393,10 +396,10 @@ test_aba()
 	unlock_aba_lock(1);
     }
     
-    //   pthread_create(&thread[1], NULL, &thread_two, &a_item);    
+    pthread_create(&thread[1], NULL, &thread_two, a_item);    
 
     unlock_aba_lock(2);
-    //pthread_join(thread[1], NULL);
+    pthread_join(thread[1], NULL);
     
     unlock_aba_lock(0);
 
