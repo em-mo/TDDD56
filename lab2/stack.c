@@ -137,6 +137,13 @@ stack_push(stack_t **stack, void *buffer)
         new_item->next = stack->next;
         cas(stack->next, old_item, new_item);
         }while(new_item != old_item)*/
+
+    stack_t *old_item;
+    do {
+        old_item = *stack;
+        ((stack_t *)buffer)->next = old_item;
+        cas(*stack, old_item, buffer);
+    } while (buffer != old_item)
 #endif
 
     return 0;
@@ -158,7 +165,12 @@ stack_pop(stack_t **stack, void *buffer)
     /*** Optional ***/
     // Implement a harware CAS-based stack
 #else
-    // Implement a harware CAS-based stack
+    stack_t* next;
+    do {
+        buffer = *stack;
+        next = (*stack)->next;
+        cas(*stack, buffer, next);
+    } while (buffer != old_item)
 #endif
 
     return 0;
