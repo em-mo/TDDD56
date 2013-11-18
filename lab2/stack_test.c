@@ -320,10 +320,10 @@ measure_push()
 void*
 thread_one(void* arg)
 {
-    stack_t *element = arg;
+    stack_t *element = (stack_t*) malloc(sizeof(stack_t));
     printf("thread one attempting pop\n");
-    stack_pop_aba(&stack, arg);
-//    printf("thread one popped: %c\n", *((char*)(element->data)));
+    stack_pop_aba(&stack, element);
+    printf("thread one popped: %c\n", *((char*)(element->data)));
     printf("thread one attempting pop\n");
     return NULL;
 }

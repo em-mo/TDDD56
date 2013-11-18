@@ -211,7 +211,7 @@ stack_pop_aba(stack_t **stack, void *buffer)
     b = (stack_t*)buffer;
     do {
         old = *stack;
-	*b = **stack;
+	    *b = **stack;
         next = (*stack)->next;
 
 	
