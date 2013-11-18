@@ -48,6 +48,6 @@ stack_t * stack_alloc();
 
 
 int
-stack_pop_aba(stack_t **, void *)
+stack_pop_aba(stack_t **, void *);
 
 #endif /* STACK_H */

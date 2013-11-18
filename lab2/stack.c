@@ -47,6 +47,8 @@
 
 #if NON_BLOCKING == 0
 pthread_mutex_t stack_mutex = PTHREAD_MUTEX_INITIALIZER;
+#else
+pthread_mutex_t aba_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 stack_t *
@@ -87,7 +89,7 @@ stack_init(stack_t *stack, size_t size)
 
 #if NON_BLOCKING == 0
     // Implement a lock_based stack
-    pthread_mutex_init(&stack_mutex, NULL);
+//    pthread_mutex_init(&stack_mutex, NULL);
 #elif NON_BLOCKING == 1
     /*** Optional ***/
     // Implement a harware CAS-based stack
@@ -176,6 +178,7 @@ stack_pop(stack_t **stack, void *buffer)
     return 0;
 }
 
+#if NON_BLOCKING == 2
 int
 stack_pop_aba(stack_t **stack, void *buffer)
 {
@@ -183,8 +186,9 @@ stack_pop_aba(stack_t **stack, void *buffer)
     do {
         buffer = *stack;
         next = (*stack)->next;
-        pthread_mutex_lock(&stack_mutex);        
+        pthread_mutex_lock(&aba_mutex);        
     } while (cas(stack, buffer, next) != buffer);
 
     return 0;
 }
+#endif

@@ -109,7 +109,7 @@ thread_test_stack_push(void *arg)
 {
     thread_test_push_args_t *args = (thread_test_push_args_t *) arg;
     int i;
-    for (i = 0; i < MAX_PUSH_POP/NB_THREADS; i++)
+    for (i = 0; i < MAX_PUSH_POP; i++)
     {
         stack_push(&stack, &prealloc[args->id][i]);
     }
@@ -120,7 +120,7 @@ void *
 thread_test_stack_pop(void *data)
 {
     int i;
-    for (i = 0; i < MAX_PUSH_POP/NB_THREADS; i++)
+    for (i = 0; i < MAX_PUSH_POP; i++)
     {
         stack_pop(&stack, data);
     }
@@ -232,6 +232,30 @@ test_pop_safe()
     return success;
 }
 
+
+void *
+thread_measure_stack_push(void *arg)
+{
+    thread_test_push_args_t *args = (thread_test_push_args_t *) arg;
+    int i;
+    for (i = 0; i < MAX_PUSH_POP/NB_THREADS; i++)
+    {
+        stack_push(&stack, &prealloc[args->id][i]);
+    }
+    return NULL;
+}
+
+void *
+thread_measure_stack_pop(void *data)
+{
+    int i;
+    for (i = 0; i < MAX_PUSH_POP/NB_THREADS; i++)
+    {
+        stack_pop(&stack, data);
+    }
+    return NULL;
+}
+
 void
 measure_pop()
 {
@@ -241,7 +265,6 @@ measure_pop()
     pthread_mutexattr_t mutex_attr;
     int i;
 
-    counter = 0;
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
     pthread_mutexattr_init(&mutex_attr);
@@ -249,17 +272,18 @@ measure_pop()
     for (i = 0; i < NB_THREADS; i++)
     {
         int x;
-        pthread_create(&thread[i], &attr, &thread_test_stack_pop, &x);
+        pthread_create(&thread[i], &attr, &thread_measure_stack_pop, &x);
     }
 
     for (i = 0; i < NB_THREADS; i++)
     {
         pthread_join(thread[i], NULL);
     }
+    return;
 }
 
 
-int
+void
 measure_push()
 {
     // Make sure your stack remains in a good state with expected content when
@@ -270,7 +294,6 @@ measure_push()
     pthread_mutexattr_t mutex_attr;
     int i;
 
-    counter = 0;
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
     pthread_mutexattr_init(&mutex_attr);
@@ -279,7 +302,7 @@ measure_push()
     for (i = 0; i < NB_THREADS; i++)
     {
         args[i].id  = i;
-        pthread_create(&thread[i], &attr, &thread_test_stack_push, &args[i]);
+        pthread_create(&thread[i], &attr, &thread_measure_stack_push, &args[i]);
     }
 
 
@@ -287,6 +310,7 @@ measure_push()
     {
         pthread_join(thread[i], NULL);
     }
+    return;
 }
 
 
