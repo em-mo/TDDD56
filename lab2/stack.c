@@ -176,3 +176,15 @@ stack_pop(stack_t **stack, void *buffer)
     return 0;
 }
 
+int
+stack_pop_aba(stack_t **stack, void *buffer)
+{
+    stack_t* next;
+    do {
+        buffer = *stack;
+        next = (*stack)->next;
+        pthread_mutex_lock(&stack_mutex);        
+    } while (cas(stack, buffer, next) != buffer);
+
+    return 0;
+}
