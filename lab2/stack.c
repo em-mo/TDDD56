@@ -113,7 +113,6 @@ stack_check(stack_t *stack)
 
     return 0;
 }
-
 int
 stack_push(stack_t **stack, void *buffer)
 {

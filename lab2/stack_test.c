@@ -112,7 +112,6 @@ thread_test_stack_push(void *arg)
     for (i = 0; i < MAX_PUSH_POP; i++)
     {
         stack_push(&stack, &prealloc[args->id][i]);
-
     }
     return NULL;
 }
@@ -192,11 +191,12 @@ test_pop_safe()
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
     pthread_mutexattr_init(&mutex_attr);
 
+
+    thread_test_push_args_t arg[NB_THREADS];
     for (i = 0; i < NB_THREADS; i++)
     {
-        thread_test_push_args_t arg;
-        arg.id  = i;
-        pthread_create(&thread[i], &attr, &thread_test_stack_push, &arg);
+        arg[i].id  = i;
+        pthread_create(&thread[i], &attr, &thread_test_stack_push, &arg[i]);
     }
 
     for (i = 0; i < NB_THREADS; i++)
