@@ -99,6 +99,7 @@ test_finalize()
 }
 typedef struct thread_test_push_args thread_test_push_args_t;
 
+<<<<<<< Updated upstream
 struct thread_test_push_args
 {
     int id;
@@ -111,17 +112,34 @@ thread_test_stack_push(thread_test_push_args_t *arg)
     for (i = 0; i < MAX_PUSH_POP; i++)
     {
         stack_push(stack, prealloc[arg->id][i]);
+=======
+void *
+thread_test_stack_push(void *arg)
+{
+    int i;
+    for (i = 0; i < MAX_PUSH_POP; i++)
+    {
+        stack_push(stack, arg);
+>>>>>>> Stashed changes
     }
     return NULL;
 }
 
 void *
+<<<<<<< Updated upstream
 thread_test_stack_pop(void *data)
+=======
+thread_test_stack_pop(void *arg)
+>>>>>>> Stashed changes
 {
     int i;
     for (i = 0; i < MAX_PUSH_POP; i++)
     {
+<<<<<<< Updated upstream
         stack_pop(stack, data);
+=======
+        stack_pop(stack, arg);
+>>>>>>> Stashed changes
     }
     return NULL;
 }
@@ -143,6 +161,7 @@ test_push_safe()
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
     pthread_mutexattr_init(&mutex_attr);
 
+<<<<<<< Updated upstream
 
 
     for (i = 0; i < NB_THREADS; i++)
@@ -151,6 +170,12 @@ test_push_safe()
         arg.id  = i;
 
         pthread_create(&thread[i], &attr, &thread_test_stack_push, &arg);
+=======
+    for (i = 0; i < NB_THREADS; i++)
+    {
+        int x = i;
+        pthread_create(&thread[i], &attr, &thread_test_stack_push, &x);
+>>>>>>> Stashed changes
     }
 
 
@@ -194,9 +219,14 @@ test_pop_safe()
 
     for (i = 0; i < NB_THREADS; i++)
     {
+<<<<<<< Updated upstream
         thread_test_push_args_t arg;
         arg.id  = i;
         pthread_create(&thread[i], &attr, &thread_test_stack_push, &arg);
+=======
+        int x = i;
+        pthread_create(&thread[i], &attr, &thread_test_stack_push, &x);
+>>>>>>> Stashed changes
     }
 
     for (i = 0; i < NB_THREADS; i++)

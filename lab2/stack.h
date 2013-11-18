@@ -37,9 +37,9 @@ struct stack
 typedef struct stack stack_t;
 
 // Pushes an element in a thread-safe manner
-int stack_push(stack_t *, void*);
+int stack_push(stack_t **, void*);
 // Pops an element in a thread-safe manner
-int stack_pop(stack_t *, void*);
+int stack_pop(stack_t **, void*);
 
 int
 stack_init(stack_t*, size_t);
