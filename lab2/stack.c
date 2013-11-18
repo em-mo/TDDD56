@@ -124,7 +124,6 @@ stack_push(stack_t **stack, void *buffer)
     *stack = (stack_t *) buffer;
 
     pthread_mutex_unlock(&stack_mutex);
-
 #elif NON_BLOCKING == 1
     /*** Optional ***/
     // Implement a harware CAS-based stack
