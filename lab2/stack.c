@@ -142,8 +142,8 @@ stack_push(stack_t **stack, void *buffer)
     do {
         old_item = *stack;
         ((stack_t *)buffer)->next = old_item;
-        cas(*stack, old_item, buffer);
-    } while (buffer != old_item)
+        
+    } while (cas(stack, old_item, buffer) != old_item);
 #endif
 
     return 0;
@@ -169,8 +169,8 @@ stack_pop(stack_t **stack, void *buffer)
     do {
         buffer = *stack;
         next = (*stack)->next;
-        cas(*stack, buffer, next);
-    } while (buffer != old_item)
+        
+    } while (cas(stack, buffer, next) != buffer);
 #endif
 
     return 0;
