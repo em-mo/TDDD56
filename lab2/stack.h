@@ -50,4 +50,10 @@ stack_t * stack_alloc();
 int
 stack_pop_aba(stack_t **, void *);
 
+void
+lock_aba_lock();
+
+void
+unlock_aba_lock();
+
 #endif /* STACK_H */

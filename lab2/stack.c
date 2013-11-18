@@ -179,6 +179,20 @@ stack_pop(stack_t **stack, void *buffer)
 }
 
 #if NON_BLOCKING == 2
+void
+lock_aba_lock()
+{
+     pthread_mutex_lock(&aba_mutex);
+     return;
+}
+
+void
+unlock_aba_lock()
+{
+     pthread_mutex_unlock(&aba_mutex);
+     return;
+}
+
 int
 stack_pop_aba(stack_t **stack, void *buffer)
 {

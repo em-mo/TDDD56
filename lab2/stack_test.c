@@ -317,11 +317,80 @@ measure_push()
 // 3 Threads should be enough to raise and detect the ABA problem
 #define ABA_NB_THREADS 3
 
+void*
+thread_one(void* arg)
+{
+    stack_t *element = arg;
+    printf("thread one attempting pop\n");
+    stack_pop_aba(&stack, arg);
+    printf("thread one popped: %c\n", *((char*)(element->data)));
+    return NULL;
+}
+
+void*
+thread_two(void* arg)
+{
+    stack_t* first_item = NULL, *second_item = NULL;
+
+    stack_pop(&stack, first_item);
+    printf("thread two popped: %c\n", *((char*)(first_item->data)));
+    stack_pop(&stack, second_item);
+    printf("thread two popped: %c\n", *((char*)(second_item->data)));
+    stack_push(&stack, first_item);
+    printf("thread two pushed a\n");
+    return NULL;
+}
+
+void
+print_stack()
+{
+    stack_t* tmp_stack = stack;
+    printf("Stack: ");
+    while (tmp_stack->next != NULL)
+    {
+	printf("%c ", *((char*)tmp_stack->data));
+	tmp_stack = tmp_stack->next;
+    }
+    printf("\n");
+}
+
 int
 test_aba()
 {
+    pthread_t thread[ABA_NB_THREADS];
+
     int success, aba_detected = 0;
     // Write here a test for the ABA problem
+    stack_t* a_item = malloc(sizeof(stack_t));
+    stack_t* b_item = malloc(sizeof(stack_t));
+    stack_t* c_item = malloc(sizeof(stack_t));
+    char a,b,c;
+    stack_t* popped;
+
+    a = 'a';
+    b = 'b';
+    c = 'c';
+    a_item->data = &a;
+    b_item->data = &b;
+    c_item->data = &c;
+    stack_push(&stack, c_item);
+    stack_push(&stack, b_item);
+    stack_push(&stack, a_item);
+    
+    print_stack();
+    
+    lock_aba_lock();
+    pthread_create(&thread[0], NULL, &thread_one, &popped);
+    pthread_create(&thread[1], NULL, &thread_two, &a_item);    
+    
+    pthread_join(thread[1], NULL);
+    
+    unlock_aba_lock();
+
+    pthread_join(thread[0], NULL);
+    
+    print_stack();
+
     success = aba_detected;
     return success;
 }
