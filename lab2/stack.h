@@ -51,9 +51,12 @@ int
 stack_pop_aba(stack_t **, void *);
 
 void
-lock_aba_lock();
+lock_aba_lock(int lock_id);
 
 void
-unlock_aba_lock();
+unlock_aba_lock(int lock_id);
+
+int
+trylock_aba_lock(int lock_id);
 
 #endif /* STACK_H */

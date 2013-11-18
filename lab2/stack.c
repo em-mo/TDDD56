@@ -48,7 +48,7 @@
 #if NON_BLOCKING == 0
 pthread_mutex_t stack_mutex = PTHREAD_MUTEX_INITIALIZER;
 #else
-pthread_mutex_t aba_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t aba_mutex[3];
 #endif
 
 stack_t *
@@ -89,7 +89,9 @@ stack_init(stack_t *stack, size_t size)
 
 #if NON_BLOCKING == 0
     // Implement a lock_based stack
-//    pthread_mutex_init(&stack_mutex, NULL);
+    pthread_mutex_init(&aba_mutex[0], NULL);
+    pthread_mutex_init(&aba_mutex[1], NULL);
+    pthread_mutex_init(&aba_mutex[2], NULL);
 #elif NON_BLOCKING == 1
     /*** Optional ***/
     // Implement a harware CAS-based stack
@@ -169,9 +171,11 @@ stack_pop(stack_t **stack, void *buffer)
 #else
     stack_t* next;
     do {
+	printf("before\n");
         buffer = *stack;
+	printf("buffer\n");
         next = (*stack)->next;
-        
+	printf("next\n");
     } while (cas((size_t*)stack, (size_t)buffer, (size_t)next) != (size_t)buffer);
 #endif
 
@@ -180,29 +184,47 @@ stack_pop(stack_t **stack, void *buffer)
 
 #if NON_BLOCKING == 2
 void
-lock_aba_lock()
+lock_aba_lock(int lock_id)
 {
-     pthread_mutex_lock(&aba_mutex);
+     pthread_mutex_lock(&aba_mutex[lock_id]);
      return;
 }
 
 void
-unlock_aba_lock()
+unlock_aba_lock(int lock_id)
 {
-     pthread_mutex_unlock(&aba_mutex);
+     pthread_mutex_unlock(&aba_mutex[lock_id]);
      return;
+}
+
+int
+trylock_aba_lock(int lock_id)
+{
+     return pthread_mutex_trylock(&aba_mutex[lock_id]);
 }
 
 int
 stack_pop_aba(stack_t **stack, void *buffer)
 {
-    stack_t* next;
+    lock_aba_lock(1);
+    stack_t* next, *old, *b;
+    b = (stack_t*)buffer;
     do {
-        buffer = *stack;
+        old = *stack;
+	*b = **stack;
         next = (*stack)->next;
-        pthread_mutex_lock(&aba_mutex);        
-    } while (cas((size_t*)stack, (size_t)buffer, (size_t)next) != (size_t)buffer);
 
+	
+	lock_aba_lock(2);
+	unlock_aba_lock(1);
+	unlock_aba_lock(2);
+	
+
+        lock_aba_lock(0); 
+	unlock_aba_lock(0); 
+	printf("unlock\n");
+    } while (cas((size_t*)stack, (size_t)old, (size_t)next) != (size_t)old);
+//    printf("%c\n", *((char*)(b->data)));
     return 0;
 }
 #endif

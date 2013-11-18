@@ -323,7 +323,8 @@ thread_one(void* arg)
     stack_t *element = arg;
     printf("thread one attempting pop\n");
     stack_pop_aba(&stack, arg);
-    printf("thread one popped: %c\n", *((char*)(element->data)));
+//    printf("thread one popped: %c\n", *((char*)(element->data)));
+    printf("thread one attempting pop\n");
     return NULL;
 }
 
@@ -331,12 +332,17 @@ void*
 thread_two(void* arg)
 {
     stack_t* first_item = NULL, *second_item = NULL;
+    
+    lock_aba_lock(2);
+    unlock_aba_lock(2);
+    lock_aba_lock(1);
+    unlock_aba_lock(1);
 
     stack_pop(&stack, first_item);
-    printf("thread two popped: %c\n", *((char*)(first_item->data)));
+    //printf("thread two popped: %c\n", *((char*)(first_item->data)));
     stack_pop(&stack, second_item);
-    printf("thread two popped: %c\n", *((char*)(second_item->data)));
-    stack_push(&stack, first_item);
+    //printf("thread two popped: %c\n", *((char*)(second_item->data)));
+    stack_push(&stack, arg);
     printf("thread two pushed a\n");
     return NULL;
 }
@@ -357,6 +363,7 @@ print_stack()
 int
 test_aba()
 {
+#if NON_BLOCKING == 2
     pthread_t thread[ABA_NB_THREADS];
 
     int success, aba_detected = 0;
@@ -379,13 +386,19 @@ test_aba()
     
     print_stack();
     
-    lock_aba_lock();
+    lock_aba_lock(0);
+    lock_aba_lock(2);
     pthread_create(&thread[0], NULL, &thread_one, &popped);
-    pthread_create(&thread[1], NULL, &thread_two, &a_item);    
+    while(trylock_aba_lock(1) == 0){
+	unlock_aba_lock(1);
+    }
     
-    pthread_join(thread[1], NULL);
+    //   pthread_create(&thread[1], NULL, &thread_two, &a_item);    
+
+    unlock_aba_lock(2);
+    //pthread_join(thread[1], NULL);
     
-    unlock_aba_lock();
+    unlock_aba_lock(0);
 
     pthread_join(thread[0], NULL);
     
@@ -393,6 +406,9 @@ test_aba()
 
     success = aba_detected;
     return success;
+#else
+    return false;
+#endif
 }
 
 // We test here the CAS function
