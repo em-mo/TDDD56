@@ -55,10 +55,19 @@ typedef int data_t;
 stack_t *stack;
 data_t data;
 
+stack_t **prealloc;
+
+
 void
 test_init()
 {
-  // Initialize your test batch
+  prealloc = (stack_t**) malloc(sizeof(stack_t*) * NB_THREADS);
+
+  int i;
+  for (i = 0; i < NB_THREADS; ++i)
+  {
+    prealloc[i] = (stack_t*) malloc(sizeof(stack_t) * MAX_PUSH_POP);    
+  }
 }
 
 void
