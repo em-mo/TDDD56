@@ -145,7 +145,7 @@ stack_push(stack_t **stack, void *buffer)
         old_item = *stack;
         ((stack_t *)buffer)->next = old_item;
         
-    } while (cas((size_t*)stack, (size_t)old_item, (size_t)buffer) != old_item);
+    } while (cas((size_t*)stack, (size_t)old_item, (size_t)buffer) != (size_t)old_item);
 #endif
 
     return 0;
@@ -172,7 +172,7 @@ stack_pop(stack_t **stack, void *buffer)
         buffer = *stack;
         next = (*stack)->next;
         
-    } while (cas((size_t*)stack, (size_t)buffer, (size_t)next) != buffer);
+    } while (cas((size_t*)stack, (size_t)buffer, (size_t)next) != (size_t)buffer);
 #endif
 
     return 0;
@@ -201,7 +201,7 @@ stack_pop_aba(stack_t **stack, void *buffer)
         buffer = *stack;
         next = (*stack)->next;
         pthread_mutex_lock(&aba_mutex);        
-    } while (cas((size_t*)stack, (size_t)buffer, (size_t)next) != buffer);
+    } while (cas((size_t*)stack, (size_t)buffer, (size_t)next) != (size_t)buffer);
 
     return 0;
 }
