@@ -177,6 +177,11 @@ test_pop_safe()
 	pthread_create(&thread[i], &attr, &thread_test_stack_push, &x);
     }
 
+    for (i = 0; i < NB_THREADS; i++)
+    {
+      pthread_join(thread[i], NULL);
+    }
+
   for (i = 0; i < NB_THREADS; i++)
     {
 	int x;
