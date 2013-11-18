@@ -5,20 +5,20 @@
  *  Copyright 2011 Nicolas Melot
  *
  * This file is part of TDDD56.
- * 
+ *
  *     TDDD56 is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     TDDD56 is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with TDDD56. If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 #ifndef DEBUG
@@ -38,7 +38,7 @@
 #if NON_BLOCKING == 0
 #warning Stacks are synchronized through locks
 #else
-#if NON_BLOCKING == 1 
+#if NON_BLOCKING == 1
 #warning Stacks are synchronized through lock-based CAS
 #else
 #warning Stacks are synchronized through hardware CAS
@@ -52,75 +52,75 @@ pthread_mutex_t stack_mutex = PTHREAD_MUTEX_INITIALIZER;
 stack_t *
 stack_alloc()
 {
-  // Example of a task allocation with correctness control
-  // Feel free to change it
-  stack_t *res;
+    // Example of a task allocation with correctness control
+    // Feel free to change it
+    stack_t *res;
 
-  res = malloc(sizeof(stack_t));
-  assert(res != NULL);
+    res = malloc(sizeof(stack_t));
+    assert(res != NULL);
 
-  if (res == NULL)
-    return NULL;
+    if (res == NULL)
+        return NULL;
 
-// You may allocate a lock-based or CAS based stack in
-// different manners if you need so
+    // You may allocate a lock-based or CAS based stack in
+    // different manners if you need so
 #if NON_BLOCKING == 0
-  // Implement a lock_based stack
+    // Implement a lock_based stack
 #elif NON_BLOCKING == 1
-  /*** Optional ***/
-  // Implement a harware CAS-based stack
+    /*** Optional ***/
+    // Implement a harware CAS-based stack
 #else
-  // Implement a harware CAS-based stack
+    // Implement a harware CAS-based stack
 #endif
 
-  return res;
+    return res;
 }
 
 int
 stack_init(stack_t *stack, size_t size)
 {
-  assert(stack != NULL);
-  assert(size > 0);
+    assert(stack != NULL);
+    assert(size > 0);
 
-  stack->next = NULL;
-  stack->data = NULL;
+    stack->next = NULL;
+    stack->data = NULL;
 
 #if NON_BLOCKING == 0
-  // Implement a lock_based stack
-  pthread_mutex_init(&stack_mutex, NULL); 
+    // Implement a lock_based stack
+    pthread_mutex_init(&stack_mutex, NULL);
 #elif NON_BLOCKING == 1
-  /*** Optional ***/
-  // Implement a harware CAS-based stack
+    /*** Optional ***/
+    // Implement a harware CAS-based stack
 #else
-  // Implement a harware CAS-based stack
+    // Implement a harware CAS-based stack
 #endif
 
-  return 0;
+    return 0;
 }
 
 int
 stack_check(stack_t *stack)
 {
-  /*** Optional ***/
-  // Use code and assertions to make sure your stack is
-  // in a consistent state and is safe to use.
-  //
-  // For now, just makes just the pointer is not NULL
-  //
-  // Debugging use only
+    /*** Optional ***/
+    // Use code and assertions to make sure your stack is
+    // in a consistent state and is safe to use.
+    //
+    // For now, just makes just the pointer is not NULL
+    //
+    // Debugging use only
 
-  assert(stack != NULL);
+    assert(stack != NULL);
 
-  return 0;
+    return 0;
 }
 
 int
-stack_push(stack_t *stack, void* buffer)
+stack_push(stack_t *stack, void *buffer)
 {
     stack_t *new_item = stack_alloc();
 
 #if NON_BLOCKING == 0
-  // Implement a lock_based stack
+    // Implement a lock_based stack
     pthread_mutex_lock(&stack_mutex);
 
     new_item->data = stack->data;
@@ -131,42 +131,44 @@ stack_push(stack_t *stack, void* buffer)
     pthread_mutex_unlock(&stack_mutex);
 
 #elif NON_BLOCKING == 1
-  /*** Optional ***/
-  // Implement a harware CAS-based stack
+    /*** Optional ***/
+    // Implement a harware CAS-based stack
 #else
-  // Implement a harware CAS-based stack
+    // Implement a harware CAS-based stack
 
-//WIP
-/*    stack_t *old_item;
-    do{
-	old_item = stack->next;
-	new_item->next = stack->next;
-	cas(stack->next, old_item, new_item);
-	}while(new_item != old_item)*/
+    //WIP
+    /*    stack_t *old_item;
+        do{
+        old_item = stack->next;
+        new_item->next = stack->next;
+        cas(stack->next, old_item, new_item);
+        }while(new_item != old_item)*/
 #endif
 
-  return 0;
+    return 0;
 }
 
 int
-stack_pop(stack_t *stack, void* buffer)
+stack_pop(stack_t *stack, void *buffer)
 {
 #if NON_BLOCKING == 0
-  // Implement a lock_based stack
+    // Implement a lock_based stack
     pthread_mutex_lock(&stack_mutex);
+
     stack_t *old_item = stack->next;
     stack->data = stack->next->data;
     stack->next = stack->next->next;
+
     pthread_mutex_unlock(&stack_mutex);
-    
+
     free(old_item);
 #elif NON_BLOCKING == 1
-  /*** Optional ***/
-  // Implement a harware CAS-based stack
+    /*** Optional ***/
+    // Implement a harware CAS-based stack
 #else
-  // Implement a harware CAS-based stack
+    // Implement a harware CAS-based stack
 #endif
 
-  return 0;
+    return 0;
 }
 
