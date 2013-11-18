@@ -105,12 +105,13 @@ struct thread_test_push_args
 };
 
 void *
-thread_test_stack_push(thread_test_push_args_t *arg)
+thread_test_stack_push(void *arg)
 {
+    thread_test_push_args_t* args = (thread_test_push_args_t*) arg;
     int i;
     for (i = 0; i < MAX_PUSH_POP; i++)
     {
-        stack_push(stack, prealloc[arg->id][i]);
+        stack_push(&stack, &prealloc[args->id][i]);
 
     }
     return NULL;
@@ -122,7 +123,7 @@ thread_test_stack_pop(void *data)
     int i;
     for (i = 0; i < MAX_PUSH_POP; i++)
     {
-        stack_pop(stack, data);
+        stack_pop(&stack, data);
     }
     return NULL;
 }
