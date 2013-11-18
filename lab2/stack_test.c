@@ -107,12 +107,11 @@ struct thread_test_push_args
 void *
 thread_test_stack_push(void *arg)
 {
-    thread_test_push_args_t* args = (thread_test_push_args_t*) arg;
+    thread_test_push_args_t *args = (thread_test_push_args_t *) arg;
     int i;
     for (i = 0; i < MAX_PUSH_POP; i++)
     {
         stack_push(&stack, &prealloc[args->id][i]);
-
     }
     return NULL;
 }
@@ -145,12 +144,11 @@ test_push_safe()
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
     pthread_mutexattr_init(&mutex_attr);
 
+    thread_test_push_args_t args[NB_THREADS];
     for (i = 0; i < NB_THREADS; i++)
     {
-        thread_test_push_args_t arg;
-        arg.id  = i;
-
-        pthread_create(&thread[i], &attr, &thread_test_stack_push, &arg);
+        args[i].id  = i;
+        pthread_create(&thread[i], &attr, &thread_test_stack_push, &args[i]);
     }
 
 
