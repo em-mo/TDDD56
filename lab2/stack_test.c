@@ -109,7 +109,7 @@ thread_test_stack_push(void *arg)
 {
     thread_test_push_args_t *args = (thread_test_push_args_t *) arg;
     int i;
-    for (i = 0; i < MAX_PUSH_POP; i++)
+    for (i = 0; i < MAX_PUSH_POP/NB_THREADS; i++)
     {
         stack_push(&stack, &prealloc[args->id][i]);
     }
@@ -120,7 +120,7 @@ void *
 thread_test_stack_pop(void *data)
 {
     int i;
-    for (i = 0; i < MAX_PUSH_POP; i++)
+    for (i = 0; i < MAX_PUSH_POP/NB_THREADS; i++)
     {
         stack_pop(&stack, data);
     }
@@ -231,6 +231,64 @@ test_pop_safe()
 
     return success;
 }
+
+void
+measure_pop()
+{
+    // Same as the test above for parallel pop operation
+    pthread_attr_t attr;
+    pthread_t thread[NB_THREADS];
+    pthread_mutexattr_t mutex_attr;
+    int i;
+
+    counter = 0;
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+    pthread_mutexattr_init(&mutex_attr);
+
+    for (i = 0; i < NB_THREADS; i++)
+    {
+        int x;
+        pthread_create(&thread[i], &attr, &thread_test_stack_pop, &x);
+    }
+
+    for (i = 0; i < NB_THREADS; i++)
+    {
+        pthread_join(thread[i], NULL);
+    }
+}
+
+
+int
+measure_push()
+{
+    // Make sure your stack remains in a good state with expected content when
+    // several threads push concurrently to it
+
+    pthread_attr_t attr;
+    pthread_t thread[NB_THREADS];
+    pthread_mutexattr_t mutex_attr;
+    int i;
+
+    counter = 0;
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+    pthread_mutexattr_init(&mutex_attr);
+
+    thread_test_push_args_t args[NB_THREADS];
+    for (i = 0; i < NB_THREADS; i++)
+    {
+        args[i].id  = i;
+        pthread_create(&thread[i], &attr, &thread_test_stack_push, &args[i]);
+    }
+
+
+    for (i = 0; i < NB_THREADS; i++)
+    {
+        pthread_join(thread[i], NULL);
+    }
+}
+
 
 // 3 Threads should be enough to raise and detect the ABA problem
 #define ABA_NB_THREADS 3
@@ -350,8 +408,9 @@ main(int argc, char **argv)
 {
     setbuf(stdout, NULL);
     // MEASURE == 0 -> run unit tests
-#if MEASURE == 0
     test_init();
+#if MEASURE == 0
+
 
     test_run(test_cas);
 
@@ -374,13 +433,17 @@ main(int argc, char **argv)
         (void)arg[i].id; // Makes the compiler to shut up about unused variable arg
         // Run push-based performance test based on MEASURE token
 #if MEASURE == 1
+	
         clock_gettime(CLOCK_MONOTONIC, &t_start[i]);
+	measure_push();
         // Push MAX_PUSH_POP times in parallel
         clock_gettime(CLOCK_MONOTONIC, &t_stop[i]);
 #else
+	measure_push();
         // Run pop-based performance test based on MEASURE token
         clock_gettime(CLOCK_MONOTONIC, &t_start[i]);
         // Pop MAX_PUSH_POP times in parallel
+	measure_pop();
         clock_gettime(CLOCK_MONOTONIC, &t_stop[i]);
 #endif
     }
