@@ -387,6 +387,8 @@ test_aba()
     stack_push(&stack, b_item);
     stack_push(&stack, a_item);
     
+    printf("\n");
+    
     print_stack();
     
     lock_aba_lock(0);
