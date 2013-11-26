@@ -394,6 +394,7 @@ test_aba()
     lock_aba_lock(0);
     lock_aba_lock(2);
     pthread_create(&thread[0], NULL, &thread_one, &popped);
+    
     while(trylock_aba_lock(1) == 0){
 	unlock_aba_lock(1);
     }
