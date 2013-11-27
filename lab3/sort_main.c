@@ -83,7 +83,6 @@ main(int argc, char** argv)
 
 	for (i = 0; i < array->length; i++)
 	{
-		printf("hej\n");
 		if (array_get(array, i) != array_get(check, i))
 		{
 			fprintf(stderr, "[ERROR] Value at index %i (%i) was different than in qsort'ed array at same index (%i)\n", i, array_get(array, i), array_get(check, i));

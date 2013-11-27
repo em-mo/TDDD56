@@ -5,20 +5,20 @@
  *  Copyright 2011 Nicolas Melot
  *
  * This file is part of TDDD56.
- * 
+ *
  *     TDDD56 is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     TDDD56 is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with TDDD56. If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 
 // Do not touch or move these lines
@@ -43,213 +43,295 @@
 inline int
 fetch_and_add(int *ptr, int value)
 {
-	return __sync_fetch_and_add(ptr, value);
+    return __sync_fetch_and_add(ptr, value);
 }
 
 int
-sort(struct array * array)
+sort(struct array *array)
 {
-	srand(time(NULL));
-	//simple_quicksort_ascending(array);
-	insertion_sort(array);
+    srand(time(NULL));
+    //simple_quicksort_ascending(array);
+    parallell_quicksort(array, 3);
 
-	return 0;
+    return 0;
 }
 
 
 void
-calculate_pivot_3(const struct array * array, int *pivot_low, int *pivot_high)
+calculate_pivot_3(const struct array *array, int *pivot_low, int *pivot_high)
 {
-	int max, min, average;
-	min = INT_MAX;
-	max = INT_MIN;
+    int max, min, average;
+    min = INT_MAX;
+    max = INT_MIN;
 
-	int length = array->length;
-	int n = (int)sqrt(array->length);
-	int i;
-	for (i = 0; i < n; ++i)
-	{
-		int current_value = array->data[random_int(length)];
-		average += current_value;
+    int length = array->length;
+    int n = (int)sqrt(array->length);
+    int i;
+    for (i = 0; i < n; ++i)
+    {
+        int r = random_int(length);
+        int current_value = array->data[r];
+        average += current_value;
 
-		if (current_value < min)
-			min = current_value;
-		if (current_value > max)
-			max = current_value;
-	}
+        if (current_value < min)
+            min = current_value;
+        if (current_value > max)
+            max = current_value;
+        //printf("pivot current: %d\n", r);
+    }
 
-	average /= n;
+    average /= n;
 
-	*pivot_low = (min + average) / 2;
-	*pivot_high = (max + average) / 2;
-	return;
+    *pivot_low = (min + average) / 2;
+    *pivot_high = (max + average) / 2;
+    return;
 }
 
 void
-calculate_pivot(const struct array * array, int *pivot)
+calculate_pivot(const struct array *array, int *pivot)
 {
-	int sum;
+    int sum;
 
-	int length = array->length;
-	int n = (int)sqrt(array->length);
+    int length = array->length;
+    int n = (int)sqrt(array->length);
 
-	int i;
-	for (i = 0; i < n; ++i)
-	{
-		int current_value = array->data[random_int(length)];
-		sum += current_value;
-	}
+    int i;
+    for (i = 0; i < n; ++i)
+    {
+        int current_value = array->data[random_int(length)];
+        sum += current_value;
+    }
 
-	*pivot = sum / n;
-	return;
+    *pivot = sum / n;
+    return;
 }
 
 int random_int(int max)
 {
-	int high;
-	int low;
+    int high;
+    int low;
 
-	low = rand();
-	high = rand();
+    low = rand();
+    high = rand();
 
-	high = high << 16;
-	high = high | low;
-
-	return high % max;
+    high = high << 16;
+    high = high | low;
+    high &= 0xEFFFFFFF;
+    printf("random %d %d\n", high, max);
+    return high % max;
 }
 
 inline void
 swap(int *a, int *b)
 {
-	int c;
-	c = *a;
-	*a = *b;
-	*b = c;
-	return;
+    int c;
+    c = *a;
+    *a = *b;
+    *b = c;
+    return;
 }
 
 void
-insertion_sort(struct array * array)
+insertion_sort(struct array *array)
 {
-	int i;
-	for (i = 1; i < array->length; ++i)
-	{
-		int c;
-		for (c = i; c > 0 && array->data[c] > array->data[c - 1]; --c)
-		{
-			swap(&array->data[c], &array->data[c - 1]);
-		}
-		
-	}
-	return;
+    int i;
+    for (i = 1; i < array->length; ++i)
+    {
+        int c;
+        for (c = i; c > 0 && array->data[c] > array->data[c - 1]; --c)
+        {
+            swap(&array->data[c], &array->data[c - 1]);
+        }
+
+    }
+    return;
 }
 
 
-struct private_thread_args{
-	int start_index, stop_index;
+struct private_thread_args
+{
+    int start_index, stop_index;
 };
 
-struct shared_thread_args{
-	int pivot_low, pivot_high;
-	int left, right, middle;
-	struct array* b;
-	struct array* a;
-	struct array* middle_array;
-	struct private_thread_args private_args;
+struct shared_thread_args
+{
+    int pivot_low, pivot_high;
+    int left, right, middle;
+    struct array *b;
+    struct array *a;
+    struct array *middle_array;
+    struct private_thread_args private_args;
 };
 
 void
-partition_array(struct private_thread_args* private_args, int length){
-	int i;
-
-	private_args[0].start_index = 0;
-	private_args[0].stop_index = length/NB_THREADS;
-
-	for(i = 1; i < NB_THREADS - 1; i++){
-		private_args[i].start_index = private_args[i-1].stop_index;
-
-		if(i < NB_THREADS - 1)
-			private_args[i].stop_index = (NB_THREADS+1) * length/NB_THREADS;
-		else
-			private_args[NB_THREADS - 1].stop_index = length;	
-	}
-	return;
-}
-
-void* 
-thread_func(void* arg)
+partition_array(struct private_thread_args *private_args, int length)
 {
-	struct shared_thread_args* t_args = (struct shared_thread_args*) arg;
-	int i;
-	for(i = t_args->private_args.start_index; i < t_args->private_args.stop_index; i++){
-		if (array_get(t_args->a, i) <= t_args->pivot_low ) 
-			t_args->b[fetch_and_add(&t_args->left, 1)] = t_args->a[i];
-		else if (array_get(t_args->a, i) >= t_args->pivot_high)
-			t_args->b[ fetch_and_add(&t_args->right, -1)] = t_args->a[i];
-		else
-			t_args->middle_array[fetch_and_add(&t_args->middle, 1)] = t_args->a[i];
-	}
-	return NULL;
+    int i;
+
+    private_args[0].start_index = 0;
+    private_args[0].stop_index = length / NB_THREADS;
+
+    for (i = 1; i < NB_THREADS - 1; i++)
+    {
+        private_args[i].start_index = private_args[i - 1].stop_index;
+
+        if (i < NB_THREADS - 1)
+            private_args[i].stop_index = (NB_THREADS + 1) * length / NB_THREADS;
+        else
+            private_args[NB_THREADS - 1].stop_index = length;
+    }
+    return;
 }
 
-void*
-copy_func(void* arg)
+void *
+thread_func(void *arg)
 {
-	struct shared_thread_args* t_args = (struct shared_thread_args*) arg;
-	int i;
-	for(i = t_args->private_args.start_index; i < t_args->private_args.stop_index; i++){
-		if(i < t_args->left){
-			t_args->a[i] = t_args->b[i];
-		}else if(i < t_args->right){
-			t_args->a[i] = t_args->middle_array[i - t_args->left];
-		}else
-			t_args->a[i] = t_args->b[i];
-	}
-	return NULL;
+    struct shared_thread_args *t_args = (struct shared_thread_args *) arg;
+    int i;
+    for (i = t_args->private_args.start_index; i < t_args->private_args.stop_index; i++)
+    {
+        //printf("array length: %d\n", t_args->a->length);
+        if (array_get(t_args->a, i) <= t_args->pivot_low )
+            t_args->b[fetch_and_add(&t_args->left, 1)] = t_args->a[i];
+        else if (array_get(t_args->a, i) >= t_args->pivot_high)
+            t_args->b[ fetch_and_add(&t_args->right, -1)] = t_args->a[i];
+        else
+            t_args->middle_array[fetch_and_add(&t_args->middle, 1)] = t_args->a[i];
+    }
+    return NULL;
 }
+
+void *
+copy_func(void *arg)
+{
+    struct shared_thread_args *t_args = (struct shared_thread_args *) arg;
+    int i;
+    for (i = t_args->private_args.start_index; i < t_args->private_args.stop_index; i++)
+    {
+        if (i < t_args->left)
+        {
+            t_args->a[i] = t_args->b[i];
+        }
+        else if (i < t_args->right)
+        {
+            t_args->a[i] = t_args->middle_array[i - t_args->left];
+        }
+        else
+            t_args->a[i] = t_args->b[i];
+    }
+    return NULL;
+}
+
+struct partitions
+{
+    int index1;
+    int index2;
+};
+
+struct partitions
+par_partition(struct array *array)
+{
+	struct partitions partitions;
+    struct shared_thread_args t_args;
+
+    calculate_pivot_3(array, &t_args.pivot_low, &t_args.pivot_high);
+    printf("pivots: %d %d\n", t_args.pivot_low, t_args.pivot_high);
+    t_args.left = 0;
+    t_args.middle = 0;
+    t_args.right = array->length - 1;
+    t_args.a = array;
+    t_args.b = array_alloc(array->length);
+    t_args.middle_array = array_alloc(array->length);
+
+    pthread_t threads[NB_THREADS];
+    struct private_thread_args private_args[NB_THREADS];
+    partition_array(private_args, array->length);
+
+    int i;
+    for (i = 0; i < NB_THREADS; i++)
+    {
+        t_args.private_args = private_args[i];
+        pthread_create(&threads[i], NULL, &thread_func, &t_args);
+    }
+
+    for (i = 0; i < NB_THREADS; i++)
+    {
+        pthread_join(threads[i], NULL);
+    }
+
+    //parallell copy back to a.
+    for (i = 0; i < NB_THREADS; i++)
+    {
+        t_args.private_args = private_args[i];
+        pthread_create(&threads[i], NULL, &copy_func, &t_args);
+    }
+
+    for (i = 0; i < NB_THREADS; i++)
+    {
+        pthread_join(threads[i], NULL);
+    }
+
+    partitions.index1 = t_args.left;
+    partitions.index2 = t_args.right;
+
+    return partitions;
+}
+
 
 
 void
-par_partition(struct array* array, const int pivot_high, const int pivot_low, int* low_index, int* high_index)
+parallell_quicksort(struct array *array, int threads)
 {
-	
-	struct shared_thread_args t_args;
-	t_args.pivot_low =  pivot_low;
-	t_args.pivot_high =  pivot_high;
-	t_args.left = 0;
-	t_args.middle = 0;
-	t_args.right = array->length - 1;
-	t_args.b = array_alloc(array->length);
-	t_args.middle_array = array_alloc(array->length);
+    if (threads > 1)
+    {
+        struct partitions partitions;
+        partitions = par_partition(array);
 
-	pthread_t threads[NB_THREADS];
-	struct private_thread_args private_args[NB_THREADS];
-	partition_array(private_args, array->length);
-	
-	int i;
-	for(i = 0; i < NB_THREADS; i++)
-	{
-		t_args.private_args = private_args[i];
-		pthread_create(&threads[i], NULL, &thread_func, &t_args);
-	}
+        struct array array1;
+        struct array array2;
+        struct array array3;
 
-	for(i = 0; i < NB_THREADS; i++){
-		pthread_join(threads[i], NULL);
-	}
+        int no_partitions = 3;
 
-	//parallell copy back to a.
-	for(i = 0; i < NB_THREADS; i++)
-	{
-		t_args.private_args = private_args[i];
-		pthread_create(&threads[i], NULL, &copy_func, &t_args);
-	}
+        if (no_partitions == 2)
+        {
+            array1.length = partitions.index1;
+            array1.capacity = partitions.index1;
+            array1.data = &array->data[0];
+            printf("partitions 2 start: %d length 1: %d\n", 0, partitions.index1);
 
-	for(i = 0; i < NB_THREADS; i++){
-		pthread_join(threads[i], NULL);
-	}
+            array2.length = array->length - partitions.index1;
+            array2.capacity = array->length - partitions.index1;
+            array2.data = &array->data[partitions.index1];
+            printf("partitions 2start: %d length 2: %d\n", partitions.index1, array->length - partitions.index1);
 
-	*low_index = t_args.left;
-	*high_index = t_args.right;
+            parallell_quicksort(&array1, threads / no_partitions);
+            parallell_quicksort(&array2, threads / no_partitions);
+        }
+        else
+        {
+            array1.length = partitions.index1;
+            array1.capacity = partitions.index1;
+            array1.data = &array->data[0];
+            printf("partitions 3 start: %d length 1: %d\n", 0, partitions.index1);
 
-	return;
+            array2.length = partitions.index2 - partitions.index1;
+            array2.capacity = partitions.index2 - partitions.index1;
+            array2.data = &array->data[partitions.index1];
+            printf("partitions 3 start: %d length 2: %d\n", partitions.index1, partitions.index2 - partitions.index1);
+
+            array3.length = array->length - partitions.index2;
+            array3.capacity = array->length - partitions.index2;
+            array3.data = &array->data[partitions.index2];
+            printf("partitions 3 start: %d length 2: %d\n", partitions.index2, array->length - partitions.index2);
+
+            parallell_quicksort(&array1, threads / no_partitions);
+            parallell_quicksort(&array2, threads / no_partitions);
+            parallell_quicksort(&array3, threads / no_partitions);
+        }
+    }
+    else
+    {
+    	simple_quicksort_ascending(array);
+    }
 }
