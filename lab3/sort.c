@@ -173,7 +173,6 @@ partition_array(struct private_thread_args *private_args, int length)
 
     private_args[0].start_index = 0;
     private_args[0].stop_index = length / NB_THREADS;
-    printf("array length %d\n", length);
  	printf("0) start: %d ", private_args[0].start_index);
     printf("0 stop: %d\n", private_args[0].stop_index);
     for (i = 1; i < NB_THREADS; i++)
@@ -222,14 +221,18 @@ copy_func(void *arg)
         if (i < t_args->left)
         {
             array_insert(t_args->a, array_get(t_args->b, i), i);
+
         }
-        else if (i < t_args->right)
+        else if (i <= t_args->right)
         {
         	array_insert(t_args->a, array_get(t_args->middle_array, i - t_args->left), i);
         }
         else
+        {
         	array_insert(t_args->a, array_get(t_args->b, i), i);
+        }
     }
+
     return NULL;
 }
 
@@ -284,9 +287,8 @@ par_partition(struct array *array)
         pthread_join(threads[i], NULL);
     }
 
-    printf("bababoiu parts %d %d\n", t_args.left, t_args.right);
     partitions.index1 = t_args.left;
-    partitions.index2 = t_args.right;
+    partitions.index2 = t_args.right + 1;
     printf("left %d\n", t_args.left);
     printf("right %d\n", t_args.right);
     return partitions;
@@ -307,7 +309,6 @@ parallell_quicksort(struct array *array, int threads)
         struct array array3;
 
         int no_partitions = 3;
-        printf("Vi lever!\n");
         if (no_partitions == 2)
         {
             array1.length = partitions.index1;
