@@ -89,14 +89,15 @@ stack_init(stack_t *stack, size_t size)
 
 #if NON_BLOCKING == 0
     // Implement a lock_based stack
-    pthread_mutex_init(&aba_mutex[0], NULL);
-    pthread_mutex_init(&aba_mutex[1], NULL);
-    pthread_mutex_init(&aba_mutex[2], NULL);
+
 #elif NON_BLOCKING == 1
     /*** Optional ***/
     // Implement a harware CAS-based stack
 #else
     // Implement a harware CAS-based stack
+    pthread_mutex_init(&aba_mutex[0], NULL);
+    pthread_mutex_init(&aba_mutex[1], NULL);
+    pthread_mutex_init(&aba_mutex[2], NULL);
 #endif
 
     return 0;
