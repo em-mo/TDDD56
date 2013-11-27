@@ -170,15 +170,20 @@ partition_array(struct private_thread_args *private_args, int length)
 
     private_args[0].start_index = 0;
     private_args[0].stop_index = length / NB_THREADS;
-
-    for (i = 1; i < NB_THREADS - 1; i++)
+    printf("array length %d\n", length);
+ 	printf("%d) start: %d ", i, private_args[i].start_index);
+    printf("%d stop: %d\n", i, private_args[i].stop_index);
+    for (i = 1; i < NB_THREADS; i++)
     {
         private_args[i].start_index = private_args[i - 1].stop_index;
 
-        if (i < NB_THREADS - 1)
-            private_args[i].stop_index = (NB_THREADS + 1) * length / NB_THREADS;
+        if (i < NB_THREADS)
+            private_args[i].stop_index = (i + 1) * length / NB_THREADS;
         else
             private_args[NB_THREADS - 1].stop_index = length;
+
+        printf("%d) start: %d ", i, private_args[i].start_index);
+        printf("%d stop: %d\n", i, private_args[i].stop_index);
     }
     return;
 }
@@ -245,6 +250,7 @@ par_partition(struct array *array)
 
     pthread_t threads[NB_THREADS];
     struct private_thread_args private_args[NB_THREADS];
+    
     partition_array(private_args, array->length);
 
     int i;
