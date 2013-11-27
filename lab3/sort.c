@@ -67,9 +67,10 @@ calculate_pivot_3(const struct array *array, int *pivot_low, int *pivot_high)
     int length = array->length;
     int n = (int)sqrt(array->length);
     int i;
+    average = 0;
     for (i = 0; i < n; ++i)
     {
-        int r = random_int(length);
+        int r = rand() % length;
         int current_value = array->data[r];
         average += current_value;
 
@@ -77,13 +78,13 @@ calculate_pivot_3(const struct array *array, int *pivot_low, int *pivot_high)
             min = current_value;
         if (current_value > max)
             max = current_value;
-        //printf("pivot current: %d\n", r);
     }
 
     average /= n;
 
     *pivot_low = (min + average) / 2;
     *pivot_high = (max + average) / 2;
+
     return;
 }
 
@@ -117,7 +118,7 @@ int random_int(int max)
     high = high << 16;
     high = high | low;
     high &= 0xEFFFFFFF;
-    printf("random %d %d\n", high, max);
+    printf("random %d %d\n", high, RAND_MAX);
     return high % max;
 }
 
