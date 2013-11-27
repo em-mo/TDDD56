@@ -141,6 +141,7 @@ insertion_sort(struct array * array)
 		}
 		
 	}
+	return;
 }
 
 
@@ -172,9 +173,10 @@ partition_array(struct private_thread_args* private_args, int length){
 		else
 			private_args[NB_THREADS - 1].stop_index = length;	
 	}
+	return;
 }
 
-void 
+void* 
 thread_func(void* arg)
 {
 	struct shared_thread_args* t_args = (struct shared_thread_args*) arg;
@@ -187,9 +189,10 @@ thread_func(void* arg)
 		else
 			t_args->middle_array[fetch_and_add(&t_args->middle, 1)] = t_args->a[i];
 	}
+	return NULL;
 }
 
-void
+void*
 copy_func(void* arg)
 {
 	struct shared_thread_args* t_args = (struct shared_thread_args*) arg;
@@ -198,10 +201,11 @@ copy_func(void* arg)
 		if(i < t_args->left){
 			t_args->a[i] = t_args->b[i];
 		}else if(i < t_args->right){
-			t_args->a[i] = t_args->middle_array[i - args->left];
+			t_args->a[i] = t_args->middle_array[i - t_args->left];
 		}else
 			t_args->a[i] = t_args->b[i];
-	}		
+	}
+	return NULL;
 }
 
 
@@ -216,7 +220,7 @@ par_partition(struct array* array, const int pivot_high, const int pivot_low, in
 	t_args.middle = 0;
 	t_args.right = array->length - 1;
 	t_args.b = array_alloc(array->length);
-	t_args.middle = array_alloc(array->length);
+	t_args.middle_array = array_alloc(array->length);
 
 	pthread_t threads[NB_THREADS];
 	struct private_thread_args private_args[NB_THREADS];
@@ -226,24 +230,26 @@ par_partition(struct array* array, const int pivot_high, const int pivot_low, in
 	for(i = 0; i < NB_THREADS; i++)
 	{
 		t_args.private_args = private_args[i];
-		pthread_create(threads[i], NULL, thread_func, &t_args);
+		pthread_create(&threads[i], NULL, &thread_func, &t_args);
 	}
 
 	for(i = 0; i < NB_THREADS; i++){
-		pthread_join(threads[i]);
+		pthread_join(threads[i], NULL);
 	}
 
 	//parallell copy back to a.
 	for(i = 0; i < NB_THREADS; i++)
 	{
 		t_args.private_args = private_args[i];
-		pthread_create(threads[i], NULL, copy_func, &t_args);
+		pthread_create(&threads[i], NULL, &copy_func, &t_args);
 	}
 
 	for(i = 0; i < NB_THREADS; i++){
-		pthread_join(threads[i]);
+		pthread_join(threads[i], NULL);
 	}
 
 	*low_index = t_args.left;
 	*high_index = t_args.right;
+
+	return;
 }
