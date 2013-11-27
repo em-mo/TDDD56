@@ -325,7 +325,6 @@ thread_one(void* arg)
     printf("thread one attempting pop\n");
     stack_pop_aba(&stack, element);
     printf("thread one popped: %c\n", *((char*)(element->data)));
-    printf("thread one attempting pop\n");
     return NULL;
 }
 
@@ -368,12 +367,32 @@ print_stack()
 }
 
 int
+verify_aba()
+{
+    stack_t item;
+
+    stack_pop(&stack, &item);
+
+    if (*((char*)(item.data)) != 'b')
+        return 0;
+
+    stack_pop(&stack, &item);
+
+    if (*((char*)(item.data)) != 'c')
+        return 0;
+
+    if (stack->next != NULL)
+        return 0;
+
+    return 1;
+}
+
+int
 test_aba()
 {
 #if NON_BLOCKING == 2
     pthread_t thread[ABA_NB_THREADS];
 
-    int success, aba_detected = 0;
     // Write here a test for the ABA problem
     stack_t* a_item = malloc(sizeof(stack_t));
     stack_t* b_item = malloc(sizeof(stack_t));
@@ -411,10 +430,9 @@ test_aba()
     unlock_aba_lock(0);
 
     pthread_join(thread[0], NULL);
-    
-    print_stack();
 
-    success = aba_detected;
+    print_stack();
+    int success = verify_aba();
     return success;
 #else
     return 0;

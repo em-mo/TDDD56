@@ -58,7 +58,7 @@ sort(struct array * array)
 
 
 void
-calculate_pivot_3(struct array * array, int *pivot_low, int *pivot_high)
+calculate_pivot_3(const struct array * array, int *pivot_low, int *pivot_high)
 {
 	int max, min, average;
 	min = INT_MAX;
@@ -86,7 +86,7 @@ calculate_pivot_3(struct array * array, int *pivot_low, int *pivot_high)
 }
 
 void
-calculate_pivot(struct array * array, int *pivot)
+calculate_pivot(const struct array * array, int *pivot)
 {
 	int sum;
 
