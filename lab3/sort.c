@@ -199,17 +199,21 @@ thread_func(void *arg)
     int i;
     for (i = private_args->start_index; i < private_args->stop_index; i++)
     {
-        printf("(%d) array length: %d\n", private_args->id,t_args.a->length);
         int value = array_get(t_args.a, i);
         if (value <= t_args.pivot_low )
+        {
             array_insert(t_args.b, fetch_and_add(&t_args.left, 1), value);
+        }
         else if (value >= t_args.pivot_high)
+        {
             array_insert(t_args.b, fetch_and_add(&t_args.right, -1), value);
+        }
         else
+        {
             array_insert(t_args.middle_array, fetch_and_add(&t_args.middle, 1), value);
+        }
 
     }
-    printf("done thread func\n");
     return NULL;
 }
 
@@ -232,7 +236,6 @@ copy_func(void *arg)
         else
         	array_insert(t_args.a, array_get(t_args.b, i), i);
     }
-    printf("copy \n");
     return NULL;
 }
 
@@ -272,11 +275,6 @@ par_partition(struct array *array)
 
     for (i = 0; i < NB_THREADS; i++)
     {
-    	printf("random %d\n", threads[i]);
-    }
-
-    for (i = 0; i < NB_THREADS; i++)
-    {
         pthread_join(threads[i], NULL);
     }
 
@@ -292,6 +290,7 @@ par_partition(struct array *array)
         pthread_join(threads[i], NULL);
     }
 
+    printf("bababoiu parts %d %d\n", t_args.left, t_args.right);
     partitions.index1 = t_args.left;
     partitions.index2 = t_args.right;
 
