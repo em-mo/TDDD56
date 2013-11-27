@@ -54,6 +54,7 @@ sort(struct array * array)
 	return 0;
 }
 
+
 void
 calculate_pivot_3(struct array * array, int *pivot_low, int *pivot_high)
 {
@@ -128,4 +129,109 @@ void
 insertion_sort(struct array * array)
 {
 
+}
+
+
+struct private_thread_args{
+	int start_index, stop_index;
+};
+
+struct shared_thread_args{
+	int pivot_low, pivot_high;
+	int left, right, middle;
+	struct array* b;
+	struct array* a;
+	struct array* middle_array;
+	struct private_thread_args private_args;
+};
+
+void
+partition_array(struct private_thread_args* private_args, int length){
+	int i;
+
+	private_args[0].start_index = 0;
+	private_args[0].stop_index = length/NB_THREADS;
+
+	for(i = 1; i < NB_THREADS - 1; i++){
+		private_args[i].start_index = private_args[i-1].stop_index;
+
+		if(i < NB_THREADS - 1)
+			private_args[i].stop_index = (NB_THREADS+1) * length/NB_THREADS;
+		else
+			private_args[NB_THREADS - 1].stop_index = length;	
+	}
+}
+
+void 
+thread_func(void* arg)
+{
+	struct shared_thread_args* t_args = (struct shared_thread_args*) arg;
+	int i;
+	for(i = t_args->private_args.start_index; i < t_args->private_args.stop_index; i++){
+		if (array_get(t_args->a, i) <= t_args->pivot_low ) 
+			t_args->b[fetch_and_add(&t_args->left, 1)] = t_args->a[i];
+		else if (array_get(t_args->a, i) >= t_args->pivot_high)
+			t_args->b[ fetch_and_add(&t_args->right, -1)] = t_args->a[i];
+		else
+			t_args->middle_array[fetch_and_add(&t_args->middle, 1)] = t_args->a[i];
+	}
+}
+
+void
+copy_func(void* arg)
+{
+	struct shared_thread_args* t_args = (struct shared_thread_args*) arg;
+	int i;
+	for(i = t_args->private_args.start_index; i < t_args->private_args.stop_index; i++){
+		if(i < t_args->left){
+			t_args->a[i] = t_args->b[i];
+		}else if(i < t_args->left + t_args->middle){
+			t_args->a[i] = t_args->middle_array[i];
+		}else
+			t_args->a[i] = t_args->b[i];
+	}		
+}
+
+
+void
+par_partition(struct array* array, const int pivot_high, const int pivot_low, int* low_index, int* high_index)
+{
+	
+	struct shared_thread_args t_args;
+	t_args.pivot_low =  pivot_low;
+	t_args.pivot_high =  pivot_high;
+	t_args.left = 0;
+	t_args.middle = 0;
+	t_args.right = array->length - 1;
+	t_args.b = array_alloc(array->length);
+	t_args.middle = array_alloc(array->length);
+
+	pthread_t threads[NB_THREADS];
+	struct private_thread_args private_args[NB_THREADS];
+	partition_array(private_args, array->length);
+	
+	int i;
+	for(i = 0; i < NB_THREADS; i++)
+	{
+		t_args.private_args = private_args[i];
+		pthread_create(threads[i], NULL, thread_func, &t_args);
+	}
+
+	for(i = 0; i < NB_THREADS; i++){
+		pthread_join(threads[i]);
+	}
+
+	//parallell copy back to a.
+	for(i = 0; i < NB_THREADS; i++)
+	{
+		t_args.private_args = private_args[i];
+		pthread_create(threads[i], NULL, copy_func, &t_args);
+	}
+
+	for(i = 0; i < NB_THREADS; i++){
+		pthread_join(threads[i]);
+	}
+
+	*low_index = t_args.left;
+	*high_index = t_args.right;
 }
