@@ -163,7 +163,7 @@ struct private_thread_args
 {
     int start_index, stop_index;
     int id;
-    struct shared_thread_args shared_args;
+    struct shared_thread_args *shared_args;
 };
 
 void
@@ -195,18 +195,18 @@ void *
 thread_func(void *arg)
 {
     struct private_thread_args *private_args = (struct private_thread_args *) arg;
-    struct shared_thread_args t_args = private_args->shared_args;
+    struct shared_thread_args *t_args = private_args->shared_args;
     int i;
     for (i = private_args->start_index; i < private_args->stop_index; i++)
     {
-        printf("(%d) array length: %d\n", private_args->id,t_args.a->length);
-        int value = array_get(t_args.a, i);
-        if (value <= t_args.pivot_low )
-            array_insert(t_args.b, fetch_and_add(&t_args.left, 1), value);
-        else if (value >= t_args.pivot_high)
-            array_insert(t_args.b, fetch_and_add(&t_args.right, -1), value);
+        int value = array_get(t_args->a, i);
+        if (value <= t_args->pivot_low )
+            array_insert(t_args->b, fetch_and_add(&t_args->left, 1), value);
+        else if (value >= t_args->pivot_high){
+            array_insert(t_args->b, fetch_and_add(&t_args->right, -1), value);
+        }
         else
-            array_insert(t_args.middle_array, fetch_and_add(&t_args.middle, 1), value);
+            array_insert(t_args->middle_array, fetch_and_add(&t_args->middle, 1), value);
 
     }
     printf("done thread func\n");
@@ -217,20 +217,20 @@ void *
 copy_func(void *arg)
 {
     struct private_thread_args *private_args = (struct private_thread_args *) arg;
-    struct shared_thread_args t_args = private_args->shared_args;
+    struct shared_thread_args *t_args = private_args->shared_args;
     int i;
     for (i = private_args->start_index; i < private_args->stop_index; i++)
     {
-        if (i < t_args.left)
+        if (i < t_args->left)
         {
-            array_insert(t_args.a, array_get(t_args.b, i), i);
+            array_insert(t_args->a, array_get(t_args->b, i), i);
         }
-        else if (i < t_args.right)
+        else if (i < t_args->right)
         {
-        	array_insert(t_args.a, array_get(t_args.middle_array, i - t_args.left), i);
+        	array_insert(t_args->a, array_get(t_args->middle_array, i - t_args->left), i);
         }
         else
-        	array_insert(t_args.a, array_get(t_args.b, i), i);
+        	array_insert(t_args->a, array_get(t_args->b, i), i);
     }
     printf("copy \n");
     return NULL;
@@ -265,7 +265,7 @@ par_partition(struct array *array)
     int i;
     for (i = 0; i < NB_THREADS; i++)
     {
-        private_args[i].shared_args = t_args;
+        private_args[i].shared_args = &t_args;
         private_args[i].id = i;
         pthread_create(&threads[i], NULL, &thread_func, &private_args[i]);
     }
@@ -283,7 +283,7 @@ par_partition(struct array *array)
     //parallell copy back to a.
     for (i = 0; i < NB_THREADS; i++)
     {
-        private_args[i].shared_args = t_args;
+        private_args[i].shared_args = &t_args;
         pthread_create(&threads[i], NULL, &copy_func, &t_args);
     }
 
@@ -294,7 +294,8 @@ par_partition(struct array *array)
 
     partitions.index1 = t_args.left;
     partitions.index2 = t_args.right;
-
+    printf("left %d\n", t_args.left);
+    printf("right %d\n", t_args.right);
     return partitions;
 }
 
