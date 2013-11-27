@@ -284,7 +284,7 @@ par_partition(struct array *array)
     for (i = 0; i < NB_THREADS; i++)
     {
         private_args[i].shared_args = &t_args;
-        pthread_create(&threads[i], NULL, &copy_func, &t_args);
+        pthread_create(&threads[i], NULL, &copy_func, &private_args[i]);
     }
 
     for (i = 0; i < NB_THREADS; i++)
