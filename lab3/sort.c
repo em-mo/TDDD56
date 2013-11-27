@@ -81,6 +81,23 @@ calculate_pivot_3(struct * array, int *pivot_low, int *pivot_high)
 	pivot_high = (max + average) / 2;
 }
 
+void
+calculate_pivot(struct * array, int *pivot)
+{
+	int sum;
+
+	int length = array->length;
+	int n = (int)sqrt(array->length);
+
+	for (int i = 0; i < n; ++i)
+	{
+		int current_value = array->data[random(length)]
+		average += current_value;
+	}
+
+	pivot = sum / n;
+}
+
 int
 random(int max)
 {
