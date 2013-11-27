@@ -201,12 +201,12 @@ thread_func(void *arg)
     {
         int value = array_get(t_args->a, i);
         if (value <= t_args->pivot_low )
-            array_insert(t_args->b, fetch_and_add(&t_args->left, 1), value);
+            array_insert(t_args->b, value, fetch_and_add(&t_args->left, 1));
         else if (value >= t_args->pivot_high){
-            array_insert(t_args->b, fetch_and_add(&t_args->right, -1), value);
+            array_insert(t_args->b, value, fetch_and_add(&t_args->right, -1));
         }
         else
-            array_insert(t_args->middle_array, fetch_and_add(&t_args->middle, 1), value);
+            array_insert(t_args->middle_array, value, fetch_and_add(&t_args->middle, 1));
     }
     return NULL;
 }
