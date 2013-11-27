@@ -158,7 +158,6 @@ array_write(struct array* a, char* filename)
 {
   int i;
   FILE * h;
-
   h = fopen(filename, "w");
 
   fprintf(h, "%i ", a->length);

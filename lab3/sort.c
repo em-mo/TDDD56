@@ -27,6 +27,7 @@
 #include "math.h"
 #include "time.h"
 #include "disable.h"
+#include "pthread.h"
 
 #ifndef DEBUG
 #define NDEBUG
@@ -49,7 +50,8 @@ int
 sort(struct array * array)
 {
 	srand(time(NULL));
-	simple_quicksort_ascending(array);
+	//simple_quicksort_ascending(array);
+	insertion_sort(array);
 
 	return 0;
 }
@@ -64,10 +66,10 @@ calculate_pivot_3(struct array * array, int *pivot_low, int *pivot_high)
 
 	int length = array->length;
 	int n = (int)sqrt(array->length);
-
-	for (int i = 0; i < n; ++i)
+	int i;
+	for (i = 0; i < n; ++i)
 	{
-		int current_value = array->data[random(length)]
+		int current_value = array->data[random_int(length)];
 		average += current_value;
 
 		if (current_value < min)
@@ -78,8 +80,8 @@ calculate_pivot_3(struct array * array, int *pivot_low, int *pivot_high)
 
 	average /= n;
 
-	pivot_low = (min + average) / 2;
-	pivot_high = (max + average) / 2;
+	*pivot_low = (min + average) / 2;
+	*pivot_high = (max + average) / 2;
 	return;
 }
 
@@ -91,17 +93,18 @@ calculate_pivot(struct array * array, int *pivot)
 	int length = array->length;
 	int n = (int)sqrt(array->length);
 
-	for (int i = 0; i < n; ++i)
+	int i;
+	for (i = 0; i < n; ++i)
 	{
-		int current_value = array->data[random(length)]
-		average += current_value;
+		int current_value = array->data[random_int(length)];
+		sum += current_value;
 	}
 
-	pivot = sum / n;
+	*pivot = sum / n;
 	return;
 }
 
-int random(int max)
+int random_int(int max)
 {
 	int high;
 	int low;
@@ -116,7 +119,7 @@ int random(int max)
 }
 
 inline void
-swap(int *a, int *c)
+swap(int *a, int *b)
 {
 	int c;
 	c = *a;
@@ -128,7 +131,16 @@ swap(int *a, int *c)
 void
 insertion_sort(struct array * array)
 {
-
+	int i;
+	for (i = 1; i < array->length; ++i)
+	{
+		int c;
+		for (c = i; c > 0 && array->data[c] > array->data[c - 1]; --c)
+		{
+			swap(&array->data[c], &array->data[c - 1]);
+		}
+		
+	}
 }
 
 
@@ -185,8 +197,8 @@ copy_func(void* arg)
 	for(i = t_args->private_args.start_index; i < t_args->private_args.stop_index; i++){
 		if(i < t_args->left){
 			t_args->a[i] = t_args->b[i];
-		}else if(i < t_args->left + t_args->middle){
-			t_args->a[i] = t_args->middle_array[i];
+		}else if(i < t_args->right){
+			t_args->a[i] = t_args->middle_array[i - args->left];
 		}else
 			t_args->a[i] = t_args->b[i];
 	}		
