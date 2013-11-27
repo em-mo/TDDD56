@@ -55,7 +55,7 @@ sort(struct array * array)
 }
 
 void
-calculate_pivot_3(struct * array, int *pivot_low, int *pivot_high)
+calculate_pivot_3(struct array * array, int *pivot_low, int *pivot_high)
 {
 	int max, min, average;
 	min = INT_MAX;
@@ -79,10 +79,11 @@ calculate_pivot_3(struct * array, int *pivot_low, int *pivot_high)
 
 	pivot_low = (min + average) / 2;
 	pivot_high = (max + average) / 2;
+	return;
 }
 
 void
-calculate_pivot(struct * array, int *pivot)
+calculate_pivot(struct array * array, int *pivot)
 {
 	int sum;
 
@@ -96,10 +97,10 @@ calculate_pivot(struct * array, int *pivot)
 	}
 
 	pivot = sum / n;
+	return;
 }
 
-int
-random(int max)
+int random(int max)
 {
 	int high;
 	int low;
@@ -111,4 +112,20 @@ random(int max)
 	high = high | low;
 
 	return high % max;
+}
+
+inline void
+swap(int *a, int *c)
+{
+	int c;
+	c = *a;
+	*a = *b;
+	*b = c;
+	return;
+}
+
+void
+insertion_sort(struct array * array)
+{
+
 }
