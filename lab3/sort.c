@@ -162,6 +162,7 @@ struct shared_thread_args
 struct private_thread_args
 {
     int start_index, stop_index;
+    int id;
     struct shared_thread_args shared_args;
 };
 
@@ -198,13 +199,14 @@ thread_func(void *arg)
     int i;
     for (i = private_args->start_index; i < private_args->stop_index; i++)
     {
-        //printf("array length: %d\n", t_args->a->length);
-        if (array_get(t_args.a, i) <= t_args.pivot_low )
-            t_args.b[fetch_and_add(&t_args.left, 1)] = t_args.a[i];
-        else if (array_get(t_args.a, i) >= t_args.pivot_high)
-            t_args.b[ fetch_and_add(&t_args.right, -1)] = t_args.a[i];
+        printf("(%d) array length: %d\n", private_args->id,t_args.a->length);
+        int value = array_get(t_args.a, i);
+        if (value <= t_args.pivot_low )
+            array_insert(t_args.b, fetch_and_add(&t_args.left, 1), value);
+        else if (value >= t_args.pivot_high)
+            array_insert(t_args.b, fetch_and_add(&t_args.right, -1), value);
         else
-            t_args.middle_array[fetch_and_add(&t_args.middle, 1)] = t_args.a[i];
+            array_insert(t_args.middle_array, fetch_and_add(&t_args.middle, 1), value);
 
     }
     printf("done thread func\n");
@@ -230,6 +232,7 @@ copy_func(void *arg)
         else
             t_args.a[i] = t_args.b[i];
     }
+    printf("copy \n");
     return NULL;
 }
 
@@ -263,12 +266,13 @@ par_partition(struct array *array)
     for (i = 0; i < NB_THREADS; i++)
     {
         private_args[i].shared_args = t_args;
+        private_args[i].id = i;
         pthread_create(&threads[i], NULL, &thread_func, &private_args[i]);
     }
 
     for (i = 0; i < NB_THREADS; i++)
     {
-    	printf("%d\n", threads[i]);
+    	printf("random %d\n", threads[i]);
     }
 
     for (i = 0; i < NB_THREADS; i++)
@@ -309,7 +313,7 @@ parallell_quicksort(struct array *array, int threads)
         struct array array3;
 
         int no_partitions = 3;
-
+        printf("Vi lever!\n");
         if (no_partitions == 2)
         {
             array1.length = partitions.index1;
