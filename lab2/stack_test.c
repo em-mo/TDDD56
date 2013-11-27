@@ -269,10 +269,10 @@ measure_pop()
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
     pthread_mutexattr_init(&mutex_attr);
 
+    stack_t x[NB_THREADS];
     for (i = 0; i < NB_THREADS; i++)
     {
-        int x;
-        pthread_create(&thread[i], &attr, &thread_measure_stack_pop, &x);
+        pthread_create(&thread[i], &attr, &thread_measure_stack_pop, &x[i]);
     }
 
     for (i = 0; i < NB_THREADS; i++)
@@ -317,6 +317,7 @@ measure_push()
 // 3 Threads should be enough to raise and detect the ABA problem
 #define ABA_NB_THREADS 3
 
+#if NON_BLOCKING == 2
 void*
 thread_one(void* arg)
 {
@@ -349,6 +350,9 @@ thread_two(void* arg)
     printf("thread two pushed a\n");
     return NULL;
 }
+
+#endif
+
 
 void
 print_stack()
@@ -413,7 +417,7 @@ test_aba()
     success = aba_detected;
     return success;
 #else
-    return false;
+    return 0;
 #endif
 }
 
