@@ -221,14 +221,14 @@ copy_func(void *arg)
     {
         if (i < t_args.left)
         {
-            t_args.a[i] = t_args.b[i];
+            array_insert(t_args.a, array_get(t_args.b, i), i);
         }
         else if (i < t_args.right)
         {
-            t_args.a[i] = t_args.middle_array[i - t_args.left];
+        	array_insert(t_args.a, array_get(t_args.middle_array, i - t_args.left), i);
         }
         else
-            t_args.a[i] = t_args.b[i];
+        	array_insert(t_args.a, array_get(t_args.b, i), i);
     }
     return NULL;
 }
