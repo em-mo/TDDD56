@@ -149,10 +149,7 @@ insertion_sort(struct array *array)
 }
 
 
-struct private_thread_args
-{
-    int start_index, stop_index;
-};
+
 
 struct shared_thread_args
 {
@@ -161,7 +158,11 @@ struct shared_thread_args
     struct array *b;
     struct array *a;
     struct array *middle_array;
-    struct private_thread_args private_args;
+};
+struct private_thread_args
+{
+    int start_index, stop_index;
+    struct shared_thread_args shared_args;
 };
 
 void
@@ -172,8 +173,8 @@ partition_array(struct private_thread_args *private_args, int length)
     private_args[0].start_index = 0;
     private_args[0].stop_index = length / NB_THREADS;
     printf("array length %d\n", length);
- 	printf("%d) start: %d ", i, private_args[i].start_index);
-    printf("%d stop: %d\n", i, private_args[i].stop_index);
+ 	printf("0) start: %d ", private_args[0].start_index);
+    printf("0 stop: %d\n", private_args[0].stop_index);
     for (i = 1; i < NB_THREADS; i++)
     {
         private_args[i].start_index = private_args[i - 1].stop_index;
@@ -192,38 +193,42 @@ partition_array(struct private_thread_args *private_args, int length)
 void *
 thread_func(void *arg)
 {
-    struct shared_thread_args *t_args = (struct shared_thread_args *) arg;
+    struct private_thread_args *private_args = (struct private_thread_args *) arg;
+    struct shared_thread_args t_args = private_args->shared_args;
     int i;
-    for (i = t_args->private_args.start_index; i < t_args->private_args.stop_index; i++)
+    for (i = private_args->start_index; i < private_args->stop_index; i++)
     {
         //printf("array length: %d\n", t_args->a->length);
-        if (array_get(t_args->a, i) <= t_args->pivot_low )
-            t_args->b[fetch_and_add(&t_args->left, 1)] = t_args->a[i];
-        else if (array_get(t_args->a, i) >= t_args->pivot_high)
-            t_args->b[ fetch_and_add(&t_args->right, -1)] = t_args->a[i];
+        if (array_get(t_args.a, i) <= t_args.pivot_low )
+            t_args.b[fetch_and_add(&t_args.left, 1)] = t_args.a[i];
+        else if (array_get(t_args.a, i) >= t_args.pivot_high)
+            t_args.b[ fetch_and_add(&t_args.right, -1)] = t_args.a[i];
         else
-            t_args->middle_array[fetch_and_add(&t_args->middle, 1)] = t_args->a[i];
+            t_args.middle_array[fetch_and_add(&t_args.middle, 1)] = t_args.a[i];
+
     }
+    printf("done thread func\n");
     return NULL;
 }
 
 void *
 copy_func(void *arg)
 {
-    struct shared_thread_args *t_args = (struct shared_thread_args *) arg;
+    struct private_thread_args *private_args = (struct private_thread_args *) arg;
+    struct shared_thread_args t_args = private_args->shared_args;
     int i;
-    for (i = t_args->private_args.start_index; i < t_args->private_args.stop_index; i++)
+    for (i = private_args->start_index; i < private_args->stop_index; i++)
     {
-        if (i < t_args->left)
+        if (i < t_args.left)
         {
-            t_args->a[i] = t_args->b[i];
+            t_args.a[i] = t_args.b[i];
         }
-        else if (i < t_args->right)
+        else if (i < t_args.right)
         {
-            t_args->a[i] = t_args->middle_array[i - t_args->left];
+            t_args.a[i] = t_args.middle_array[i - t_args.left];
         }
         else
-            t_args->a[i] = t_args->b[i];
+            t_args.a[i] = t_args.b[i];
     }
     return NULL;
 }
@@ -257,8 +262,13 @@ par_partition(struct array *array)
     int i;
     for (i = 0; i < NB_THREADS; i++)
     {
-        t_args.private_args = private_args[i];
-        pthread_create(&threads[i], NULL, &thread_func, &t_args);
+        private_args[i].shared_args = t_args;
+        pthread_create(&threads[i], NULL, &thread_func, &private_args[i]);
+    }
+
+    for (i = 0; i < NB_THREADS; i++)
+    {
+    	printf("%d\n", threads[i]);
     }
 
     for (i = 0; i < NB_THREADS; i++)
@@ -269,7 +279,7 @@ par_partition(struct array *array)
     //parallell copy back to a.
     for (i = 0; i < NB_THREADS; i++)
     {
-        t_args.private_args = private_args[i];
+        private_args[i].shared_args = t_args;
         pthread_create(&threads[i], NULL, &copy_func, &t_args);
     }
 
