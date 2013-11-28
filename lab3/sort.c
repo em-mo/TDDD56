@@ -50,15 +50,14 @@ int
 sort(struct array *array)
 {
     srand(time(NULL));
-    //simple_quicksort_ascending(array);
-    parallell_quicksort(array, 3);
+    simple_quicksort_ascending(array);
 
     return 0;
 }
 
 
 void
-calculate_pivot_4(const struct array *array, int *pivot_low, int *pivot_high)
+calculate_pivot_for_threads(const struct array *array, int *pivot)
 {
     struct array * tmp_array;
 
@@ -79,8 +78,12 @@ calculate_pivot_4(const struct array *array, int *pivot_low, int *pivot_high)
 
     simple_quicksort_ascending(tmp_array);
 
-    *pivot_low =  array_get(tmp_array, n / 3);
-    *pivot_high = array_get(tmp_array, 2 * n / 3);
+    int step = n / NB_THREADS;
+    for (i = 1; i < NB_THREADS; ++i)
+    {
+        pivot[i - 1] = array_get(tmp_array, i * step);
+    }
+
     array_free(tmp_array);
     return;
 }
@@ -94,6 +97,31 @@ swap(int *a, int *b)
     *b = c;
     return;
 }
+
+int
+quicksort_pivot(struct array *array)
+{
+    int samples[3];
+
+    samples[0] = array_get(array, 0);
+    samples[1] = array_get(array, array->length / 2);
+    samples[2] = array_get(array, array->length - 1);
+
+    //sort
+    if (samples[0] > samples[1]) 
+        swap(&samples[0], &samples[1]);
+    if (samples[1] > samples[2]) 
+    {
+        swap(&samples[1], &samples[2]);
+        if (samples[0] > samples[1]) 
+            swap(&samples[0], &samples[1]);
+    }
+
+
+    return samples[1];
+}
+
+
 
 void
 insertion_sort(struct array *array)
@@ -111,8 +139,42 @@ insertion_sort(struct array *array)
     return;
 }
 
+int
+sequential_partition(struct array *array, int pivot)
+{
+    int current_index = 0, i;
+    for (i = 0; i < array->length; ++i)
+    {
+        if (array_get(array, i) <= pivot)
+        {
+            swap(&array->data[i], &array->data[current_index++]);
+        }
+    }
+    return current_index;
+}
 
+void
+sequential_quick_sort(struct array *array)
+{
+    if (array->length < 10)
+        insertion_sort(array);
+    else
+    {
+        int split_index = sequential_partition(array, quicksort_pivot(array));
+        struct array left_array, right_array;
 
+        left_array.length = split_index;
+        left_array.capacity = split_index;
+        left_array.data = array->data;
+
+        right_array.length = array->length - split_index;
+        right_array.capacity = array->length - split_index;
+        right_array.data = &array->data[split_index];
+
+        sequential_quick_sort(&left_array);
+        sequential_quick_sort(&right_array);
+    }
+}
 
 struct shared_thread_args
 {
