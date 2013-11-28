@@ -46,9 +46,12 @@ fetch_and_add(int *ptr, int value)
     return __sync_fetch_and_add(ptr, value);
 }
 
+int g_seed;
+
 int
 sort(struct array *array)
 {
+    g_seed = time(NULL);
     srand(time(NULL));
     //simple_quicksort_ascending(array);
     // sequential_quick_sort(array);
@@ -320,9 +323,9 @@ thread_func(void *arg)
                 }
                 else if (value == pivot[j])
                 {
-                    int random_index = random_partition(j, shared_args->pivot_neighbors);
-                    array_put(partitions[id][random_index], value);
-                    break;
+                  int random_index = random_partition(j, shared_args->pivot_neighbors);
+                  array_put(partitions[id][random_index], value);
+                  break;
                 }
                 else if (j == NB_THREADS - 2)
                 {
@@ -338,6 +341,7 @@ thread_func(void *arg)
             array_put(partitions[id][0], array_get(a, i));
         }
     }
+
 
     for (i = 0; i < NB_THREADS; i++)
     {
@@ -480,6 +484,13 @@ parallell_samplesort(struct array *array)
     }
     free(partitions);
 
+
+
+}
+
+inline int fastrand() { 
+  g_seed = (214013*g_seed+2531011); 
+  return (g_seed>>16)&0x7FFF; 
 }
 
 inline
@@ -488,6 +499,6 @@ random_partition(int pivot_index, struct array *pivot_neighbors_list[])
 {
     struct array* pivot_neighbors = pivot_neighbors_list[pivot_index];
     int length = pivot_neighbors->length;
-    int rand_index = rand() % length;
+    int rand_index = fastrand() % length;
     return array_get(pivot_neighbors, rand_index);
 }
