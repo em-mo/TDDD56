@@ -9,7 +9,6 @@
 
 int sort(struct array *);
 
-inline int fetch_and_add(int *ptr, int value);
-
+void parallell_merge_sort(struct array * array);
 
 #endif
