@@ -74,6 +74,30 @@ struct private_thread_args
     struct shared_thread_args *shared_args;
 };
 
+int find_lower_similar(struct array * array, int index)
+{
+    value = array_get(array, index);
+    int i;
+    for (i = index - 1; i >= 0; --i)
+    {
+        if (value != array_get(array, i))
+            return i + 1;
+    }
+    return i;
+}
+
+int find_higher_similar(struct array * array, int index)
+{
+    value = array_get(array, index);
+    int i;
+    for (i = index + 1; i < array->length; ++i)
+    {
+        if (value != array_get(array, i))
+            return i;
+    }
+    return i + 1;
+}
+
 int
 binary_helper(struct array * array, int value, int lower, int upper)
 {
@@ -81,9 +105,9 @@ binary_helper(struct array * array, int value, int lower, int upper)
     int current_compare = array_get(array, current_index);
     if (upper - lower == 0)
         if (value <= current_compare)
-            return current_index;
+            return find_lower_similar(current_index);
         else
-            return current_index + 1;
+            return find_higher_similar(current_index);
     else if (value <= current_compare)
         return binary_helper(array, value, lower, current_index);
     else
