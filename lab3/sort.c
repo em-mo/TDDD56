@@ -64,6 +64,47 @@ sort(struct array *array)
     return 0;
 }
 
+void
+sequential_quick_sort(struct array *array)
+{
+    int length = array->length;
+    int *data = array->data;
+    if (length < 10)
+    {
+        insertion_sort(array);
+        return;
+    }
+    int pivot = data[length / 2];
+    int left = 0;
+    int right = length - 1;
+    while (left <= right)
+    {
+        if (data[left] < pivot)
+        {
+            ++left;
+            continue;
+        }
+        if (data[right] > pivot)
+        {
+            --right;
+            continue;
+        }
+        int tmp = data[left];
+        data[left++] = data[right];
+        data[right--] = tmp;
+    }
+    struct array left_array, right_array;
+    left_array.length = right + 1;
+    left_array.capacity = right + 1;
+    left_array.data = data;
+
+    right_array.length = array->length - left;
+    right_array.capacity = right_array.length;
+    right_array.data = &data[left];
+    sequential_quick_sort(&left_array);
+    sequential_quick_sort(&right_array);
+    return;
+}
 
 void
 calculate_pivot_for_threads(const struct array *array, int *pivot)
@@ -195,52 +236,13 @@ sequential_partition(struct array *array, int pivot)
 //     }
 // }
 
-void
-sequential_quick_sort(struct array *array)
-{
-    int length = array->length;
-    int *data = array->data;
-    if (length < 10)
-    {
-        insertion_sort(array);
-        return;
-    }
-    int pivot = data[length / 2];
-    int left = 0;
-    int right = length - 1;
-    while (left <= right)
-    {
-        if (data[left] < pivot)
-        {
-            ++left;
-            continue;
-        }
-        if (data[right] > pivot)
-        {
-            --right;
-            continue;
-        }
-        int tmp = data[left];
-        data[left++] = data[right];
-        data[right--] = tmp;
-    }
-    struct array left_array, right_array;
-    left_array.length = right + 1;
-    left_array.capacity = right + 1;
-    left_array.data = data;
 
-    right_array.length = array->length - left;
-    right_array.capacity = right_array.length;
-    right_array.data = &data[left];
-    sequential_quick_sort(&left_array);
-    sequential_quick_sort(&right_array);
-    return;
-}
 
 struct shared_thread_args
 {
     int *pivot;
     int *length;
+    struct array *pivot_neighbors[NB_THREADS - 1];
     struct array *a;
     struct array ** *partitions;
     pthread_barrier_t *barrier;
@@ -367,14 +369,51 @@ print_pivot(int *pivot)
     for (i = 0; i < NB_THREADS - 1; i++)
         printf("%d) pivot :%d\n", i, pivot[i]);
 }
+
+void
+calculate_pivot_neighbors(int *pivots, struct array *pivot_neighbors[])
+{
+    int i, j;
+    for (i = 0; i < NB_THREADS - 1; ++i)
+    {
+        array_put(pivot_neighbors[i], i);
+        array_put(pivot_neighbors[i], i + 1);
+
+        int current_pivot = pivots[i];
+        for (j = 0; j < NB_THREADS - 1; ++j)
+        {
+            if (i == j)
+                continue;
+            else if (current_pivot < pivots[j])
+                break;
+
+            if (current_pivot == pivots[j])
+            {   
+                // we are lower, we want his right thread
+                if (i < j)
+                {
+                    array_put(pivot_neighbors[i], j + 1);
+                }
+                else
+                {
+                    array_put(pivot_neighbors[i], j);
+                }
+            }
+
+        }
+    }
+
+    return;
+}
+
 void
 parallell_samplesort(struct array *array)
 {
     int pivot[NB_THREADS - 1];
     calculate_pivot_for_threads(array, pivot);
-
     struct shared_thread_args shared_args;
     struct private_thread_args private_args[NB_THREADS];
+
 
     partition_array(private_args, array->length);
 
@@ -395,6 +434,12 @@ parallell_samplesort(struct array *array)
         for (j = 0; j < NB_THREADS; j++)
             partitions[i][j] = array_alloc(array->length / NB_THREADS + 1);
     }
+
+    for (i = 0; i < NB_THREADS - 1; ++i)
+    {
+        shared_args.pivot_neighbors[i] = array_alloc(NB_THREADS);
+    }
+    calculate_pivot_neighbors(pivot, shared_args.pivot_neighbors);
 
     shared_args.pivot = pivot;
     shared_args.length = length;
