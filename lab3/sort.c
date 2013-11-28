@@ -318,6 +318,11 @@ thread_func(void *arg)
                     array_put(partitions[id][j], value);
                     break;
                 }
+                else if (value == pivot[j])
+                {
+                    int random_index = random_partition(j, shared_args->pivot_neighbors);
+                    array_put(partitions[id][random_index], value);
+                }
                 else if (j == NB_THREADS - 2)
                 {
                     array_put(partitions[id][j + 1], value);
@@ -479,10 +484,10 @@ parallell_samplesort(struct array *array)
 
 inline
 int
-random_partition(int pivot_index, struct array *pivot_neighbours_list[])
+random_partition(int pivot_index, struct array *pivot_neighbors_list[])
 {
-    struct array* pivot_neighbours = pivot_neighbours_list[pivot_index];
-    int length = pivot_neighbours->length;
+    struct array* pivot_neighbors = pivot_neighbors_list[pivot_index];
+    int length = pivot_neighbors->length;
     int rand_index = rand() % length;
-    return array_get(pivot_neighbours, rand_index);
+    return array_get(pivot_neighbors, rand_index);
 }
