@@ -24,6 +24,7 @@
 // Do not touch or move these lines
 #include <stdio.h>
 #include "stdlib.h"
+#include "string.h"
 #include "math.h"
 #include "time.h"
 #include "disable.h"
@@ -37,13 +38,7 @@
 #include "merge_sort.h"
 #include "simple_quicksort.h"
 
-inline int
-fetch_and_add(int *ptr, int value)
-{
-    return __sync_fetch_and_add(ptr, value);
-}
-
-
+#define L2CACHE (1 << 19)
 
 int
 sort(struct array *array)
@@ -289,11 +284,40 @@ construct_arrays(struct array * array, struct array *constructing_arrays, struct
     return;
 }
 
+
+void
+sequential_merge_sort(struct array * array)
+{
+    if (array->length < L2CACHE)
+        simple_quicksort_ascending(array);
+    else
+    {
+        struct array array1, array2, *result;
+        array1.length = array->length / 2;
+        array1.capacity = array1.length;
+        array1.data = array->data;
+
+        array2.length = array->length - array1.length;
+        array2.capacity = array2.length;
+        array2.data = &array->data[array1.length];
+
+        sequential_merge_sort(&array1);
+        sequential_merge_sort(&array2);
+
+        result = array_alloc(array->length);
+
+        sequential_merge(&array1, &array2, result);
+
+        memcpy(array->data, result, array->length);
+    }
+}
+
 void*
 thread_sequential_sort(void* arg)
 {
     struct array *array = (struct array *)arg;
     simple_quicksort_ascending(array);
+    // sequential_merge_sort(array);
     return NULL;
 }
 
@@ -306,7 +330,6 @@ parallell_merge_sort(struct array * array)
     partition_array(loop_bounds, array->length);
     construct_arrays(array, thread_arrays, loop_bounds, NB_THREADS);
 
-    struct timespec start, stop;
     pthread_t threads[NB_THREADS];
     int i;
     for (i = 0; i < NB_THREADS; ++i)
@@ -324,8 +347,6 @@ parallell_merge_sort(struct array * array)
         tmp_array1 = array_alloc(array->length);
         tmp_array2 = array_alloc(array->length);
 
-        clock_gettime(CLOCK_MONOTONIC, &start);
-
         sequential_merge(&thread_arrays[0], &thread_arrays[1], tmp_array1);
 
         for (i = 2; i < NB_THREADS - 1; ++i)
@@ -337,24 +358,20 @@ parallell_merge_sort(struct array * array)
         }
 
         sequential_merge(&thread_arrays[NB_THREADS - 1], tmp_array1, tmp_array2);
-        clock_gettime(CLOCK_MONOTONIC, &stop);
-        printf("Tiden %d.%d %d.%d\n", start.tv_sec, start.tv_nsec, stop.tv_sec, stop.tv_nsec);
         *array = *tmp_array2;
     }
     else if (NB_THREADS == 2)
     {
-        printf("hej\n");
         struct array * tmp_array1;
         tmp_array1 = array_alloc(array->length);
 
-        clock_gettime(CLOCK_MONOTONIC, &start);
         // parallell_merge(&thread_arrays[0], &thread_arrays[1], tmp_array1);
         sequential_merge(&thread_arrays[0], &thread_arrays[1], tmp_array1);
-        clock_gettime(CLOCK_MONOTONIC, &stop);
-        printf("Tiden %d.%d %d.%d\n", start.tv_sec, start.tv_nsec, stop.tv_sec, stop.tv_nsec);
+
         *array = *tmp_array1;
 
     }
 
     return;
 }
+
