@@ -308,7 +308,7 @@ thread_func(void* arg)
     struct shared_thread_args* shared_args = private_args->shared_args;
 
     int id = private_args->id;
-
+    printf("id %d\n", id);
     int start_index = private_args->start_index;
     int stop_index = private_args->stop_index;
 
@@ -404,7 +404,8 @@ parallell_samplesort(struct array* array)
     for(i = 0; i < NB_THREADS; i++){
         shared_args.length[i] = 0;
         private_args[i].shared_args = &shared_args;
-        pthread_create(&threads[i], NULL, &thread_func, &private_args);
+        private_args[i].id = i;
+        pthread_create(&threads[i], NULL, &thread_func, &private_args[i]);
     }
 
 
