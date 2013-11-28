@@ -184,7 +184,7 @@ struct shared_thread_args
     int *pivot;
     int *length;
     struct array *a;
-    struct array (*partitions)[NB_THREADS][NB_THREADS];
+    struct array ***partitions;
     pthread_barrier_t *barrier;
 };
 struct private_thread_args
@@ -244,7 +244,7 @@ thread_func(void* arg)
     struct array* a = shared_args->a;
     int *pivot = shared_args->pivot;
 
-    struct array (*partitions)[NB_THREADS][NB_THREADS] = shared_args->partitions;
+    struct array ***partitions = shared_args->partitions;
     int *length = shared_args->length;
 
     int i, j, value;
@@ -299,41 +299,54 @@ parallell_samplesort(struct array* array)
 
     partition_array(private_args, array->length);
 
-    int length[NB_THREADS];
-    struct array* partitions[NB_THREADS][NB_THREADS];
-
-    int i,j;
-    for(i = 0; i < NB_THREADS; i++){
-        for(j = 0; j < NB_THREADS; j++){
-            partitions[i][j] = array_alloc(array->length/NB_THREADS);
-        }
-    }
-
     pthread_barrier_t barrier;
     pthread_barrier_init(&barrier, NULL, NB_THREADS);
+
+    int length[NB_THREADS];
+    //struct array partitions[NB_THREADS][NB_THREADS];
+
+    struct array ***partitions = (struct array***) malloc(NB_THREADS*sizeof(struct array**));
+    int i,j;
+    for(i = 0; i <  NB_THREADS; i++)
+    {
+         partitions[i] = (struct array**)malloc(NB_THREADS*sizeof(struct array*));
+    }
+    for(i = 0; i <  NB_THREADS; i++)
+    {
+        for(j = 0; j < NB_THREADS; j++)
+            partitions[i][j] = array_alloc(array->length/NB_THREADS);
+    }
 
     shared_args.pivot = pivot;
     shared_args.length = length;
     shared_args.partitions = partitions;
     shared_args.barrier = &barrier;
+    shared_args.a = array;
 
 
     pthread_t threads[NB_THREADS];
-
+    
     for(i = 0; i < NB_THREADS; i++){
         private_args[i].shared_args = &shared_args;
         pthread_create(&threads[i], NULL, &thread_func, &private_args);
     }
 
+
     for(i = 0; i < NB_THREADS; i++){
         pthread_join(threads[i], NULL);
     }
 
-    for(i = 0; i < NB_THREADS; i++){
-        for(j = 0; j < NB_THREADS; j++){
-            array_free(partitions[i][j]);
-        }
+    for(i = 0; i <  NB_THREADS; i++)
+    {
+        for(j = 0; j < NB_THREADS; j++)
+             array_free(partitions[i][j]);
     }
+    for(i = 0; i <  NB_THREADS; i++)
+    {
+        free (partitions[i]);
+    }
+    free(partitions);
+
 }
 
 
