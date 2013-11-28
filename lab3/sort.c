@@ -477,4 +477,12 @@ parallell_samplesort(struct array *array)
 
 }
 
-
+inline
+int
+random_partition(int pivot_index, struct array *pivot_neighbours_list[])
+{
+    struct array* pivot_neighbours = pivot_neighbours_list[pivot_index];
+    int length = pivot_neighbours->length;
+    int rand_index = rand() % length;
+    return array_get(pivot_neighbours, rand_index);
+}
