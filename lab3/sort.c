@@ -340,7 +340,8 @@ thread_func(void* arg)
 
     pthread_barrier_wait(shared_args->barrier);
 
-    int insert_index = calculate_start(length, id);
+    int insert_start;
+    int insert_index = insert_start = calculate_start(length, id);
 
     int pos;
     for(i = 0; i < NB_THREADS; i++)
@@ -352,10 +353,13 @@ thread_func(void* arg)
         }
     }
 
-    struct array* t_array = array_alloc(length[id]);
-    t_array->data = &a->data[calculate_start(length, id)];
+    printf("(%d) length %d\n", id, length[id]);
+    struct array t_array;
+    t_array.data = &a->data[insert_start];
+    t_array.length = length[id];
+    t_array.capacity = length[id];
 
-    sequential_quick_sort(t_array);
+    sequential_quick_sort(&t_array);
     return NULL;
 }
 
@@ -398,6 +402,7 @@ parallell_samplesort(struct array* array)
     pthread_t threads[NB_THREADS];
     
     for(i = 0; i < NB_THREADS; i++){
+        shared_args.length[i] = 0;
         private_args[i].shared_args = &shared_args;
         pthread_create(&threads[i], NULL, &thread_func, &private_args);
     }

@@ -91,6 +91,7 @@ array_alloc(int size)
     if(array->capacity > 0)
     {
       array->data = calloc(array->capacity, sizeof(int));
+      //printf("arr %d size %d\n", array->data, size);
       assert((array->data != NULL && size > 0) || (array->data == NULL && size <= 0));
     }
 
