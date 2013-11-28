@@ -254,7 +254,7 @@ parallell_merge(struct array * a, struct array * b, struct array * c)
 void
 sequential_merge(struct array * a, struct array * b, struct array * c)
 {
-    int a_counter, b_counter, c_counter;
+    int a_counter = 0, b_counter = 0, c_counter = 0;
 
     while (c_counter < a->length + b->length)
     {
