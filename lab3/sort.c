@@ -82,9 +82,37 @@ calculate_pivot_3(const struct array *array, int *pivot_low, int *pivot_high)
 
     average /= n;
 
-    *pivot_low = (min + average) / 2;
-    *pivot_high = (max + average) / 2;
+    *pivot_low =  (min - average) * 1 / 3 + average;
+    *pivot_high = (max - average) * 1 / 3 + average;
 
+    return;
+}
+
+void
+calculate_pivot_4(const struct array *array, int *pivot_low, int *pivot_high)
+{
+    struct array * tmp_array;
+
+    int length = array->length;
+    int n = (int)sqrt(array->length);
+    int i;
+
+    tmp_array = array_alloc(n);
+
+    for (i = 0; i < n; ++i)
+    {
+        int r = rand() % length;
+        int current_value = array->data[r];
+        
+        array_put(tmp_array, current_value);
+
+    }
+
+    simple_quicksort_ascending(tmp_array);
+
+    *pivot_low =  array_get(tmp_array, n / 3);
+    *pivot_high = array_get(tmp_array, 2 * n / 3);
+    array_free(tmp_array);
     return;
 }
 
@@ -248,7 +276,7 @@ par_partition(struct array *array)
 	struct partitions partitions;
     struct shared_thread_args t_args;
 
-    calculate_pivot_3(array, &t_args.pivot_low, &t_args.pivot_high);
+    calculate_pivot_4(array, &t_args.pivot_low, &t_args.pivot_high);
     printf("pivots: %d %d\n", t_args.pivot_low, t_args.pivot_high);
     t_args.left = 0;
     t_args.middle = 0;
