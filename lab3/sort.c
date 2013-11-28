@@ -322,6 +322,7 @@ thread_func(void *arg)
                 {
                     int random_index = random_partition(j, shared_args->pivot_neighbors);
                     array_put(partitions[id][random_index], value);
+                    break;
                 }
                 else if (j == NB_THREADS - 2)
                 {
@@ -337,7 +338,6 @@ thread_func(void *arg)
             array_put(partitions[id][0], array_get(a, i));
         }
     }
-
 
     for (i = 0; i < NB_THREADS; i++)
     {
