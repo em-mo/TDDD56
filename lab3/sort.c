@@ -51,8 +51,8 @@ sort(struct array *array)
 {
     srand(time(NULL));
     //simple_quicksort_ascending(array);
-    //parallell_quicksort(array, 3);
-    simple_quicksort_ascending(array);
+     sequential_quick_sort(array);
+    // insertion_sort(array);
 
     return 0;
 }
@@ -103,24 +103,44 @@ swap(int *a, int *b)
 int
 quicksort_pivot(struct array *array)
 {
-    int samples[3];
+    // int samples[3];
 
-    samples[0] = array_get(array, 0);
-    samples[1] = array_get(array, array->length / 2);
-    samples[2] = array_get(array, array->length - 1);
+    // samples[0] = array_get(array, 0);
+    // samples[1] = array_get(array, array->length / 2);
+    // samples[2] = array_get(array, array->length - 1);
 
-    //sort
-    if (samples[0] > samples[1]) 
-        swap(&samples[0], &samples[1]);
-    if (samples[1] > samples[2]) 
+    // //sort
+    // if (samples[0] > samples[1]) 
+    //     swap(&samples[0], &samples[1]);
+    // if (samples[1] > samples[2]) 
+    // {
+    //     swap(&samples[1], &samples[2]);
+    //     if (samples[0] > samples[1]) 
+    //         swap(&samples[0], &samples[1]);
+    // }
+
+    // return samples[1];
+
+    struct array * tmp_array;
+
+    int length = array->length;
+    int n = (int)sqrt(array->length);
+    int i, pivot;
+
+    tmp_array = array_alloc(n);
+
+    for (i = 0; i < n; ++i)
     {
-        swap(&samples[1], &samples[2]);
-        if (samples[0] > samples[1]) 
-            swap(&samples[0], &samples[1]);
+        int r = rand() % length;
+        int current_value = array->data[r];
+        
+        array_put(tmp_array, current_value);
     }
 
-
-    return samples[1];
+    simple_quicksort_ascending(tmp_array);
+    pivot = array_get(tmp_array, tmp_array->length / 2);
+    array_free(tmp_array);
+    return pivot;
 }
 
 
@@ -132,7 +152,7 @@ insertion_sort(struct array *array)
     for (i = 1; i < array->length; ++i)
     {
         int c;
-        for (c = i; c > 0 && array->data[c] > array->data[c - 1]; --c)
+        for (c = i; c > 0 && array->data[c] < array->data[c - 1]; --c)
         {
             swap(&array->data[c], &array->data[c - 1]);
         }
@@ -147,7 +167,13 @@ sequential_partition(struct array *array, int pivot)
     int current_index = 0, i;
     for (i = 0; i < array->length; ++i)
     {
-        if (array_get(array, i) <= pivot)
+        int element = array_get(array, i);
+        if (element == pivot)
+        {
+            if (rand() % 2)
+                swap(&array->data[i], &array->data[current_index++]);
+        }
+        else if (element < pivot)
         {
             swap(&array->data[i], &array->data[current_index++]);
         }
@@ -155,27 +181,70 @@ sequential_partition(struct array *array, int pivot)
     return current_index;
 }
 
+// void
+// sequential_quick_sort(struct array *array)
+// {
+//     if (array->length < 10)
+//         insertion_sort(array);
+//     else
+//     {
+//         int pivot = quicksort_pivot(array);
+
+//         int split_index = sequential_partition(array, pivot);
+
+//         struct array left_array, right_array;
+        
+
+//         left_array.length = split_index;
+//         left_array.capacity = split_index;
+//         left_array.data = array->data;
+
+//         right_array.length = array->length - split_index;
+//         right_array.capacity = array->length - split_index;
+//         right_array.data = &array->data[split_index];
+
+//         sequential_quick_sort(&left_array);
+//         sequential_quick_sort(&right_array);
+//     }
+// }
+
 void
-sequential_quick_sort(struct array *array)
+sequential_quick_sort(struct array * array)
 {
-    if (array->length < 10)
-        insertion_sort(array);
-    else
+    int length = array->length;
+    int *data = array->data;
+    if (length < 10)
     {
-        int split_index = sequential_partition(array, quicksort_pivot(array));
-        struct array left_array, right_array;
-
-        left_array.length = split_index;
-        left_array.capacity = split_index;
-        left_array.data = array->data;
-
-        right_array.length = array->length - split_index;
-        right_array.capacity = array->length - split_index;
-        right_array.data = &array->data[split_index];
-
-        sequential_quick_sort(&left_array);
-        sequential_quick_sort(&right_array);
+        insertion_sort(array);
+        return;
     }
+    int pivot = data[length / 2];
+    int left = 0;
+    int right = length - 1;
+    while (left <= right) {
+        if (data[left] < pivot) {
+            ++left;
+            continue;
+        }
+        if (data[right] > pivot) {
+            --right;
+            continue;
+        }
+        int tmp = data[left];
+        data[left++] = data[right];
+        data[right--] = tmp;
+    }
+    struct array left_array, right_array;
+    left_array.length = right + 1;
+    left_array.capacity = right + 1;
+    left_array.data = data;
+
+    right_array.length = array->length - left;
+    right_array.capacity = right_array.length;
+    right_array.data = &data[left];
+    sequential_quick_sort(&left_array);
+    sequential_quick_sort(&right_array);
+    return;
 }
 
 struct shared_thread_args
