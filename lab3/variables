@@ -8,7 +8,7 @@ try="`seq 1 5`"			# Number of different run per setting
 
 compile=(input_size input_set variants nb_threads)
 
-input_set="0 1 2 3"			# 0, 1, 2 and 3; respectively: random, ascending, descending, constant
+input_set="0"			# 0, 1, 2 and 3; respectively: random, ascending, descending, constant
 input_size="100000 10000000"		# number of integer
 variants="1"
-nb_threads=`seq 6 6`			# Change to seq 0 6 to run 7 variants, from sequential (0 threads) to 6 threads
+nb_threads=`seq 1 8`			# Change to seq 0 6 to run 7 variants, from sequential (0 threads) to 6 threads
