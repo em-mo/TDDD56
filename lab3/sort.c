@@ -323,8 +323,8 @@ thread_func(void *arg)
                 }
                 else if (value == pivot[j])
                 {
-                  int random_index = random_partition(j, shared_args->pivot_neighbors);
-                  array_put(partitions[id][random_index], value);
+                    int random_index = random_partition(j, shared_args->pivot_neighbors);
+                    array_put(partitions[id][random_index], value);
                   break;
                 }
                 else if (j == NB_THREADS - 2)
@@ -347,7 +347,7 @@ thread_func(void *arg)
     {
         fetch_and_add(&length[i], partitions[id][i]->length);
     }
-
+    printf("%d) barrier_wait %d\n", id, length[id]);
     pthread_barrier_wait(shared_args->barrier);
     printf("%d) partitions length %d\n", id, length[id]);
     int insert_start;
@@ -429,7 +429,7 @@ parallell_samplesort(struct array *array)
     pthread_barrier_t barrier;
     pthread_barrier_init(&barrier, NULL, NB_THREADS);
 
-    int length[NB_THREADS];
+    int length[NB_THREADS] = {0};
     //struct array partitions[NB_THREADS][NB_THREADS];
 
     struct array ***partitions = (struct array ** *) malloc(NB_THREADS * sizeof(struct array **));
@@ -461,7 +461,6 @@ parallell_samplesort(struct array *array)
 
     for (i = 0; i < NB_THREADS; i++)
     {
-        shared_args.length[i] = 0;
         private_args[i].shared_args = &shared_args;
         private_args[i].id = i;
         pthread_create(&threads[i], NULL, &thread_func, &private_args[i]);
