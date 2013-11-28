@@ -55,7 +55,11 @@ sort(struct array *array)
     // insertion_sort(array);
     //parallell_quicksort(array, 3);
     //simple_quicksort_ascending(array);
+#if NB_THREADS == 0
+
+#else
     parallell_samplesort(array);
+#endif
 
     return 0;
 }
@@ -107,44 +111,23 @@ swap(int *a, int *b)
 int
 quicksort_pivot(struct array *array)
 {
-    // int samples[3];
+    int samples[3];
 
-    // samples[0] = array_get(array, 0);
-    // samples[1] = array_get(array, array->length / 2);
-    // samples[2] = array_get(array, array->length - 1);
+    samples[0] = array_get(array, 0);
+    samples[1] = array_get(array, array->length / 2);
+    samples[2] = array_get(array, array->length - 1);
 
-    // //sort
-    // if (samples[0] > samples[1])
-    //     swap(&samples[0], &samples[1]);
-    // if (samples[1] > samples[2])
-    // {
-    //     swap(&samples[1], &samples[2]);
-    //     if (samples[0] > samples[1])
-    //         swap(&samples[0], &samples[1]);
-    // }
-
-    // return samples[1];
-
-    struct array *tmp_array;
-
-    int length = array->length;
-    int n = (int)sqrt(array->length);
-    int i, pivot;
-
-    tmp_array = array_alloc(n);
-
-    for (i = 0; i < n; ++i)
+    //sort
+    if (samples[0] > samples[1])
+        swap(&samples[0], &samples[1]);
+    if (samples[1] > samples[2])
     {
-        int r = rand() % length;
-        int current_value = array->data[r];
-
-        array_put(tmp_array, current_value);
+        swap(&samples[1], &samples[2]);
+        if (samples[0] > samples[1])
+            swap(&samples[0], &samples[1]);
     }
 
-    simple_quicksort_ascending(tmp_array);
-    pivot = array_get(tmp_array, tmp_array->length / 2);
-    array_free(tmp_array);
-    return pivot;
+    return samples[1];
 }
 
 
@@ -319,11 +302,7 @@ thread_func(void *arg)
     printf("%d) stop_index %d\n", id, stop_index);
     printf("%d) start_index %d\n", id, start_index);
 
-    int i;
-    for (i = 0; i < NB_THREADS; i++)
-        printf("%d) partitions length before ads %d\n", i, partitions[id][i]->length);
-
-    int  j, value, sum = 0;
+    int i, j, value;
     if (NB_THREADS > 1)
     {
         for (i = start_index; i < stop_index; i++)
@@ -335,18 +314,11 @@ thread_func(void *arg)
                 if (value < pivot[j])
                 {
                     array_put(partitions[id][j], value);
-                    sum++;
-                    if (sum >= 33333)
-                    {
-                        printf("id %d, value: %d, length: %d\n", id, value, partitions[id][j]->length);
-                    }
                     break;
                 }
                 else if (j == NB_THREADS - 2)
                 {
                     array_put(partitions[id][j + 1], value);
-                    sum++;
-
                 }
             }
         }
@@ -359,7 +331,6 @@ thread_func(void *arg)
         }
     }
 
-    printf("sum %d\n", sum);
 
     for (i = 0; i < NB_THREADS; i++)
     {
