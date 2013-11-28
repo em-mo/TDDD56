@@ -86,6 +86,7 @@ calculate_pivot_for_threads(const struct array *array, int *pivot)
     int step = n / NB_THREADS;
     for (i = 1; i < NB_THREADS; ++i)
     {
+        printf("skapa pivot %d\n", array_get(tmp_array, i * step));
         pivot[i - 1] = array_get(tmp_array, i * step);
     }
 
@@ -293,7 +294,7 @@ int
 calculate_start(int *length, int id)
 {
     int i;
-    int sum;
+    int sum = 0;
     for(i = 0; i < id; i++)
     {
         sum += length[i];
@@ -317,24 +318,35 @@ thread_func(void* arg)
 
     struct array ***partitions = shared_args->partitions;
     int *length = shared_args->length;
-
-    int i, j, value;
-    for(i = start_index; i < stop_index; i++)
+    // Give the lone thread something to work on
+    if (NB_THREADS > 1)
     {
-        value = array_get(a, i);
+        int i, j, value;
+        for(i = start_index; i < stop_index; i++)
+        {
+            value = array_get(a, i);
 
-        for(j = 0; j < NB_THREADS - 1; j++)
-        {   
-            if(value < pivot[j])
-            {
-                array_put(partitions[id][j], value);
-                break;
-            }else if(j == NB_THREADS - 2){
-                array_put(partitions[id][j+1], value);
+            for(j = 0; j < NB_THREADS - 1; j++)
+            {   
+                if(value < pivot[j])
+                {
+                    array_put(partitions[id][j], value);
+                    break;
+                }else if(j == NB_THREADS - 2){
+                    array_put(partitions[id][j+1], value);
+                }
             }
         }
     }
-
+    else
+    {
+        int i;
+        for(i = start_index; i < stop_index; i++)
+        {
+            array_put(partitions[id][0], array_get(a, i));
+        }
+    }
+    int i;
     for(i = 0; i < NB_THREADS; i++)
         fetch_and_add(&length[i], partitions[id][i]->length);
 
@@ -353,13 +365,17 @@ thread_func(void* arg)
         }
     }
 
-    printf("(%d) length %d\n", id, length[id]);
+
+    if (id == 0 && NB_THREADS > 1)
+    {
+        printf("pivot %d\n", pivot[0]);
+    }
     struct array t_array;
     t_array.data = &a->data[insert_start];
     t_array.length = length[id];
     t_array.capacity = length[id];
-
     sequential_quick_sort(&t_array);
+    // simple_quicksort_ascending(&t_array);
     return NULL;
 }
 
