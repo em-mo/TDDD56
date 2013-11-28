@@ -54,17 +54,42 @@ sort(struct array *array)
     g_seed = time(NULL);
     srand(time(NULL));
     //simple_quicksort_ascending(array);
-    // sequential_quick_sort(array);
     // insertion_sort(array);
     //parallell_quicksort(array, 3);
     //simple_quicksort_ascending(array);
 #if NB_THREADS == 0
-
+    sequential_quick_sort(array);
 #else
     parallell_samplesort(array);
 #endif
 
     return 0;
+}
+
+inline void
+swap(int *a, int *b)
+{
+    int c;
+    c = *a;
+    *a = *b;
+    *b = c;
+    return;
+}
+
+void
+insertion_sort(struct array *array)
+{
+    int i;
+    for (i = 1; i < array->length; ++i)
+    {
+        int c;
+        for (c = i; c > 0 && array->data[c] < array->data[c - 1]; --c)
+        {
+            swap(&array->data[c], &array->data[c - 1]);
+        }
+
+    }
+    return;
 }
 
 void
@@ -109,6 +134,8 @@ sequential_quick_sort(struct array *array)
     return;
 }
 
+#if NB_THREADS > 0
+
 void
 calculate_pivot_for_threads(const struct array *array, int *pivot)
 {
@@ -142,16 +169,6 @@ calculate_pivot_for_threads(const struct array *array, int *pivot)
     return;
 }
 
-inline void
-swap(int *a, int *b)
-{
-    int c;
-    c = *a;
-    *a = *b;
-    *b = c;
-    return;
-}
-
 int
 quicksort_pivot(struct array *array)
 {
@@ -172,24 +189,6 @@ quicksort_pivot(struct array *array)
     }
 
     return samples[1];
-}
-
-
-
-void
-insertion_sort(struct array *array)
-{
-    int i;
-    for (i = 1; i < array->length; ++i)
-    {
-        int c;
-        for (c = i; c > 0 && array->data[c] < array->data[c - 1]; --c)
-        {
-            swap(&array->data[c], &array->data[c - 1]);
-        }
-
-    }
-    return;
 }
 
 int
@@ -501,3 +500,4 @@ random_partition(int pivot_index, struct array *pivot_neighbors_list[])
     int rand_index = fastrand() % length;
     return array_get(pivot_neighbors, rand_index);
 }
+#endif

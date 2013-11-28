@@ -17,5 +17,6 @@ void insertion_sort(struct array * array);
 
 void parallell_quicksort(struct array *array, int threads);
 void parallell_samplesort(struct array *array);
+inline int random_partition(int pivot_index, struct array *pivot_neighbors_list[]);
 
 #endif
