@@ -111,14 +111,16 @@ binary_helper_minor(struct array * array, int value, int lower, int upper)
         else
             return find_higher_similar(array, current_index);
     }
-    else if (value <= current_compare)
+    else if (value < current_compare)
     {
-        return binary_helper_minor(array, value, lower, current_index);
+        return binary_helper_minor(array, value, lower, current_index - 1);
     }
-    else
+    else if (value > current_compare)
     {
         return binary_helper_minor(array, value, current_index + 1, upper);
     }
+    else
+        return find_lower_similar(array, current_index);
     return -1;
 }
 
@@ -134,14 +136,16 @@ binary_helper_major(struct array * array, int value, int lower, int upper)
         else
             return find_higher_similar(array, current_index);
     }
-    else if (value <= current_compare)
+    else if (value < current_compare)
     {
-        return binary_helper_major(array, value, lower, current_index);
+        return binary_helper_major(array, value, lower, current_index - 1);
     }
-    else
+    else if (value > current_compare)
     {
         return binary_helper_major(array, value, current_index + 1, upper);
     }
+    else
+        return find_higher_similar(array, current_index);
 
     printf("FEL\n");
     return -1;
@@ -194,17 +198,22 @@ thread_merge(void* arg)
     int rank, value, i;
     for (i = bounds_a.lower; i < bounds_a.upper; ++i)
     {
-        value = array_get(shared_args->a, i);
+        // value = array_get(shared_args->a, i);
+        value = shared_args->a->data[i];
         rank = binary_rank_search(shared_args->b, value, 0);
-        array_insert(shared_args->c, value, i + rank);
+        // array_insert(shared_args->c, value, i + rank);
+        shared_args->c->data[i + rank] = value;
     }
 
     for (i = bounds_b.lower; i < bounds_b.upper; ++i)
     {
-        value = array_get(shared_args->b, i);
+        // value = array_get(shared_args->b, i);
+        value = shared_args->b->data[i];
         rank = binary_rank_search(shared_args->a, value, 1);
-        array_insert(shared_args->c, value, i + rank);   
+        // array_insert(shared_args->c, value, i + rank);   
+        shared_args->c->data[i + rank] = value;
     }
+    printf("done %d \n", private_args->id);
     return NULL;
 }
 
@@ -243,6 +252,31 @@ parallell_merge(struct array * a, struct array * b, struct array * c)
 }
 
 void
+sequential_merge(struct array * a, struct array * b, struct array * c)
+{
+    int a_counter, b_counter, c_counter;
+
+    while (c_counter < a->length + b->length)
+    {
+        int item1, item2;
+        item1 = array_get(a, a_counter);
+        item2 = array_get(b, b_counter);
+
+        if (item1 < item2)
+        {
+            array_insert(c, item1, c_counter++);
+            ++a_counter;
+        }
+        else
+        {
+            array_insert(c, item2, c_counter++);
+            ++b_counter;
+        }
+    }
+    return;
+}
+
+void
 construct_arrays(struct array * array, struct array *constructing_arrays, struct loop_bounds *loop_bounds, int count)
 {
     int i;
@@ -272,6 +306,7 @@ parallell_merge_sort(struct array * array)
     partition_array(loop_bounds, array->length);
     construct_arrays(array, thread_arrays, loop_bounds, NB_THREADS);
 
+    struct timespec start, stop;
     pthread_t threads[NB_THREADS];
     int i;
     for (i = 0; i < NB_THREADS; ++i)
@@ -282,39 +317,39 @@ parallell_merge_sort(struct array * array)
     for (i = 0; i < NB_THREADS; ++i)
     {
         pthread_join(threads[i], NULL);
-        array_trycheck_ascending(&thread_arrays[i]);
     }
     if (NB_THREADS > 2)
     {
         struct array *tmp_array1, *tmp_array2, *swap_array;
         tmp_array1 = array_alloc(array->length);
         tmp_array2 = array_alloc(array->length);
-        printf("before merge %d\n", 1);
         parallell_merge(&thread_arrays[0], &thread_arrays[1], tmp_array1);
 
         for (i = 2; i < NB_THREADS - 1; ++i)
         {
-        printf("before merge %d\n", i);
-
             parallell_merge(&thread_arrays[i], tmp_array1, tmp_array2);
             swap_array = tmp_array1;
             tmp_array1 = tmp_array2;
             tmp_array2 = swap_array;
         }
-        printf("before merge %d\n", i);
 
         parallell_merge(&thread_arrays[NB_THREADS - 1], tmp_array1, tmp_array2);
         *array = *tmp_array2;
     }
     else if (NB_THREADS == 2)
     {
+        printf("hej\n");
         struct array * tmp_array1;
         tmp_array1 = array_alloc(array->length);
-        parallell_merge(&thread_arrays[0], &thread_arrays[1], tmp_array1);
+
+        clock_gettime(CLOCK_MONOTONIC, &start);
+        // parallell_merge(&thread_arrays[0], &thread_arrays[1], tmp_array1);
+        sequential_merge(&thread_arrays[0], &thread_arrays[1], tmp_array1);
+        clock_gettime(CLOCK_MONOTONIC, &stop);
+        printf("Tiden %d.%d %d.%d\n", start.tv_sec, start.tv_nsec, stop.tv_sec, stop.tv_nsec);
         *array = *tmp_array1;
 
     }
-    array_trycheck_ascending(array);
 
     return;
 }
