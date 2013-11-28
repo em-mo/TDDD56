@@ -51,7 +51,7 @@ sort(struct array *array)
 {
     srand(time(NULL));
     //simple_quicksort_ascending(array);
-    parallell_quicksort(array, 3);
+    //parallell_quicksort(array, 3);
 
     return 0;
 }
@@ -112,15 +112,13 @@ insertion_sort(struct array *array)
 }
 
 
-
-
 struct shared_thread_args
 {
-    int pivot_low, pivot_high;
-    int left, right, middle;
-    struct array *b;
+    int *pivot;
+    int *length;
     struct array *a;
-    struct array *middle_array;
+    struct array ***partitions;
+    pthread_barrier_t *barrier;
 };
 struct private_thread_args
 {
@@ -151,5 +149,70 @@ partition_array(struct private_thread_args *private_args, int length)
         printf("%d stop: %d\n", i, private_args[i].stop_index);
     }
     return;
+}
+
+int
+calculate_start(int *length, int id)
+{
+    int i;
+    int sum;
+    for(i = 0; i < id; i++)
+    {
+        sum += length[i];
+    }
+    return sum;
+}   
+
+void*
+thread_func(void* arg)
+{
+    struct private_thread_args* private_args = (struct private_thread_args*) arg;
+    struct shared_thread_args* shared_args = private_args->shared_args;
+
+    int id = private_args->id;
+
+    int start_index = private_args->start_index;
+    int stop_index = private_args->stop_index;
+
+    struct array* a = shared_args->a;
+    int *pivot = shared_args->pivot;
+
+    struct array*** partitions = shared_args->partitions;
+    int *length = shared_args->length;
+
+    int i, j, value;
+    for(i = start_index; i < stop_index; i++)
+    {
+        value = array_get(a, i);
+
+        for(j = 0; j < NB_THREADS - 1; j++)
+        {   
+            if(value < pivot[j])
+            {
+                array_put(partitions[id][j], value);
+                break;
+            }else if(j == NB_THREADS - 2){
+                array_put(partitions[id][j+1], value);
+            }
+        }
+    }
+
+    for(i = 0; i < NB_THREADS; i++)
+        fetch_and_add(&length[i], partitions[id][i]->length);
+
+    pthread_barrier_wait(shared_args->barrier);
+
+    int insert_index = calculate_start(length, id);
+
+    int pos;
+    for(i = 0; i < NB_THREADS; i++)
+    {
+        for(pos = 0; pos < partitions[i][id]->length; pos++)
+        {
+            array_insert(a, array_get(partitions[i][id], pos), insert_index);
+            insert_index++;
+        }
+    }
+    return NULL;
 }
 
