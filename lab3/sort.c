@@ -50,12 +50,9 @@ int
 sort(struct array *array)
 {
     srand(time(NULL));
-<<<<<<< HEAD
     //simple_quicksort_ascending(array);
     //parallell_quicksort(array, 3);
-=======
     simple_quicksort_ascending(array);
->>>>>>> 036b00b72e2baa7605d0aff4f8773af7c1ca2aaf
 
     return 0;
 }
