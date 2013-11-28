@@ -4,11 +4,15 @@
 #define NDEBUG
 #endif
 
-#ifndef MERGE_SORT
-#define MERGE_SORT
+#ifndef SORT
+#define SORT
 
 int sort(struct array *);
 
-void parallell_merge_sort(struct array * array);
-
+inline int fetch_and_add(int *ptr, int value);
+void calculate_pivot_3(const struct array * array, int *pivot_low, int *pivot_high);
+void calculate_pivot(const struct array * array, int *pivot);
+int random_int(int max);
+void insertion_sort(struct array * array);
+void parallell_quicksort(struct array *array, int threads);
 #endif
