@@ -272,8 +272,6 @@ partition_array(struct private_thread_args *private_args, int length)
 
     private_args[0].start_index = 0;
     private_args[0].stop_index = length / NB_THREADS;
- 	printf("0) start: %d ", private_args[0].start_index);
-    printf("0 stop: %d\n", private_args[0].stop_index);
     for (i = 1; i < NB_THREADS; i++)
     {
         private_args[i].start_index = private_args[i - 1].stop_index;
@@ -282,9 +280,6 @@ partition_array(struct private_thread_args *private_args, int length)
             private_args[i].stop_index = (i + 1) * length / NB_THREADS;
         else
             private_args[NB_THREADS - 1].stop_index = length;
-
-        printf("%d) start: %d ", i, private_args[i].start_index);
-        printf("%d stop: %d\n", i, private_args[i].stop_index);
     }
     return;
 }
@@ -293,7 +288,7 @@ int
 calculate_start(int *length, int id)
 {
     int i;
-    int sum;
+    int sum = 0;
     for(i = 0; i < id; i++)
     {
         sum += length[i];
@@ -308,7 +303,6 @@ thread_func(void* arg)
     struct shared_thread_args* shared_args = private_args->shared_args;
 
     int id = private_args->id;
-    printf("id %d\n", id);
     int start_index = private_args->start_index;
     int stop_index = private_args->stop_index;
 
@@ -318,7 +312,14 @@ thread_func(void* arg)
     struct array ***partitions = shared_args->partitions;
     int *length = shared_args->length;
 
-    int i, j, value;
+    printf("%d) stop_index %d\n",id, stop_index);
+    printf("%d) start_index %d\n",id, start_index);
+
+    int i;
+    for(i = 0; i < NB_THREADS; i++)
+        printf("%d) partitions length before ads %d\n",i, partitions[id][i]->length);
+
+    int  j, value, sum=0;
     for(i = start_index; i < stop_index; i++)
     {
         value = array_get(a, i);
@@ -328,18 +329,28 @@ thread_func(void* arg)
             if(value < pivot[j])
             {
                 array_put(partitions[id][j], value);
+                sum++;
+                if(sum >= 33333)
+                {
+                    printf("id %d, value: %d, length: %d\n", id, value, partitions[id][j]->length);
+                }
                 break;
             }else if(j == NB_THREADS - 2){
                 array_put(partitions[id][j+1], value);
+                sum++;
+                
             }
         }
     }
 
-    for(i = 0; i < NB_THREADS; i++)
+    printf("sum %d\n", sum);
+
+    for(i = 0; i < NB_THREADS; i++){
         fetch_and_add(&length[i], partitions[id][i]->length);
+    }
 
     pthread_barrier_wait(shared_args->barrier);
-
+    printf("%d) partitions length %d\n",id, length[id]);
     int insert_start;
     int insert_index = insert_start = calculate_start(length, id);
 
@@ -353,16 +364,19 @@ thread_func(void* arg)
         }
     }
 
-    printf("(%d) length %d\n", id, length[id]);
     struct array t_array;
     t_array.data = &a->data[insert_start];
     t_array.length = length[id];
     t_array.capacity = length[id];
-
     sequential_quick_sort(&t_array);
     return NULL;
 }
-
+void
+print_pivot(int *pivot){
+    int i;
+    for(i = 0; i < NB_THREADS-1; i++)
+        printf("%d) pivot :%d\n", i,pivot[i]);
+}
 void
 parallell_samplesort(struct array* array)
 {
@@ -389,7 +403,7 @@ parallell_samplesort(struct array* array)
     for(i = 0; i <  NB_THREADS; i++)
     {
         for(j = 0; j < NB_THREADS; j++)
-            partitions[i][j] = array_alloc(array->length/NB_THREADS);
+            partitions[i][j] = array_alloc(array->length/NB_THREADS + 1);
     }
 
     shared_args.pivot = pivot;

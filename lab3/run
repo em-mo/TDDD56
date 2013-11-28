@@ -10,7 +10,8 @@ nb_threads=$4
 try=$5
 
 if [ "x$input_dir" == "x" ]; then
-	input_dir=/scratch/$USER
+	input_dir=~/TDDD56/lab3/input
+	#input_dir=/scratch/$USER
 fi
 
 mkdir -p $input_dir
