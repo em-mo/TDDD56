@@ -107,20 +107,20 @@ binary_helper_minor(struct array * array, int value, int lower, int upper)
     if (upper - lower == 0)
     {
         if (value <= current_compare)
+            // return current_index;
             return find_lower_similar(array, current_index);
         else
+            // return current_index;
             return find_higher_similar(array, current_index);
     }
-    else if (value < current_compare)
+    else if (value <= current_compare)
     {
-        return binary_helper_minor(array, value, lower, current_index - 1);
+        return binary_helper_minor(array, value, lower, current_index);
     }
-    else if (value > current_compare)
+    else
     {
         return binary_helper_minor(array, value, current_index + 1, upper);
     }
-    else
-        return find_lower_similar(array, current_index);
     return -1;
 }
 
@@ -133,19 +133,19 @@ binary_helper_major(struct array * array, int value, int lower, int upper)
     {
         if (value < current_compare)
             return find_lower_similar(array, current_index);
+            // return current_index;
         else
+            // return current_index;
             return find_higher_similar(array, current_index);
     }
-    else if (value < current_compare)
+    else if (value <= current_compare)
     {
-        return binary_helper_major(array, value, lower, current_index - 1);
+        return binary_helper_major(array, value, lower, current_index);
     }
-    else if (value > current_compare)
+    else
     {
         return binary_helper_major(array, value, current_index + 1, upper);
     }
-    else
-        return find_higher_similar(array, current_index);
 
     printf("FEL\n");
     return -1;
@@ -323,17 +323,22 @@ parallell_merge_sort(struct array * array)
         struct array *tmp_array1, *tmp_array2, *swap_array;
         tmp_array1 = array_alloc(array->length);
         tmp_array2 = array_alloc(array->length);
-        parallell_merge(&thread_arrays[0], &thread_arrays[1], tmp_array1);
+
+        clock_gettime(CLOCK_MONOTONIC, &start);
+
+        sequential_merge(&thread_arrays[0], &thread_arrays[1], tmp_array1);
 
         for (i = 2; i < NB_THREADS - 1; ++i)
         {
-            parallell_merge(&thread_arrays[i], tmp_array1, tmp_array2);
+            sequential_merge(&thread_arrays[i], tmp_array1, tmp_array2);
             swap_array = tmp_array1;
             tmp_array1 = tmp_array2;
             tmp_array2 = swap_array;
         }
 
-        parallell_merge(&thread_arrays[NB_THREADS - 1], tmp_array1, tmp_array2);
+        sequential_merge(&thread_arrays[NB_THREADS - 1], tmp_array1, tmp_array2);
+        clock_gettime(CLOCK_MONOTONIC, &stop);
+        printf("Tiden %d.%d %d.%d\n", start.tv_sec, start.tv_nsec, stop.tv_sec, stop.tv_nsec);
         *array = *tmp_array2;
     }
     else if (NB_THREADS == 2)
