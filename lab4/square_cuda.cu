@@ -23,12 +23,12 @@ int main()
 	const int size = N*sizeof(float);
 	
 	cudaMalloc( (void**)&cd, size );
-	cudaMemcpy( cd, orignal, size, cudaMemcpyHostToDevice ); 
+	cudaMemcpy( cd, original, size, cudaMemcpyHostToDevice ); 
 	dim3 dimBlock( blocksize, 1 );
 	dim3 dimGrid( 1, 1 );
 	simple<<<dimGrid, dimBlock>>>(cd);
 	cudaThreadSynchronize();
-	cudaMemcpy( c, cd, size, cudaMemcpyDeviceToHost ); 
+	cudaMemcpy( target, cd, size, cudaMemcpyDeviceToHost ); 
 	cudaFree( cd );
 	
 	for (int i = 0; i < N; i++)
@@ -41,7 +41,8 @@ int main()
 		printf("%f ", target[i]);
 	}
 	printf("\n");
-	delete[] c;
+	delete[] original;
+	delete[] target;
 	printf("done\n");
 	return EXIT_SUCCESS;
 }
