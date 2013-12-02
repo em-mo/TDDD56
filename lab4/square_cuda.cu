@@ -22,6 +22,11 @@ int main()
 	float *cd;
 	const int size = N*sizeof(float);
 	
+	for (int i = 0; i < N; ++i)
+	{
+		original[i] = i + 1;
+	}
+
 	cudaMalloc( (void**)&cd, size );
 	cudaMemcpy( cd, original, size, cudaMemcpyHostToDevice ); 
 	dim3 dimBlock( blocksize, 1 );
