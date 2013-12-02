@@ -31,9 +31,7 @@ int main()
 			b[i+j*N] = (float)j / N;
 		}
 
-	int t1 = GetMicroseconds();
 	add_matrix(a, b, c, N);
-	int t2 = GetMicroseconds();
 
 	for (int i = 0; i < N; i++)
 	{

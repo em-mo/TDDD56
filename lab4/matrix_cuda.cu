@@ -2,7 +2,7 @@
 // gcc matrix_cpu.c -o matrix_cpu -std=c99
 
 #include <stdio.h>
-
+#include "milli.h"
 __global__ 
 void simple(float *a, float *b, float *c, int N) 
 {
@@ -11,7 +11,7 @@ void simple(float *a, float *b, float *c, int N)
 
 	int index = idx + idy*N;
 
-	if(index < N*N)
+	if(idx < N && idy < N)
 		c[index] = a[index] + b[index];
 }
 
@@ -29,7 +29,7 @@ void add_matrix(float *a, float *b, float *c, int N)
 
 int main()
 { 
-	const int N = 128;
+	const int N = 1024;
 	float *a = new float[N*N];
 	float *b = new float[N*N];
 	float *c = new float[N*N];
@@ -40,8 +40,8 @@ int main()
 	float* cd;
 
 	int size = N*N* sizeof(float);
-	int gridX = 4;
-	int gridY = 4;
+	int gridX = 64;
+	int gridY = 64;
 
 	cudaEvent_t start_event;
 	cudaEvent_t end_event;
@@ -89,10 +89,10 @@ int main()
 			printf("%0.2f ", c[i+j*N]);
 		}
 		printf("\n");
-	}*/
-
-	add_matrix(a, b, c, N);
-
+	}*/	
+	int t1 = GetMicroseconds();
+	add_matrix(a, b, c2, N);
+	int t2 = GetMicroseconds();
 	for(int i = 0; i < N*N; i++)
 	{
 		if(c[i] != c2[i]){
@@ -101,5 +101,6 @@ int main()
 		}
 	}
 
-	printf("time: %f ms\n", theTime);
+	printf("time cuda: %f ms\n", theTime);
+	printf("time cpu: %d us\n", t2 - t1);
 }
