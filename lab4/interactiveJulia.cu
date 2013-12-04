@@ -9,10 +9,35 @@
 #include <GL/glut.h>
 #include <GL/gl.h>
 #include <stdio.h>
+#include <math.h>
+
+// Dimensions
+dim3 dimBlock;
+dim3 dimGrid;
 
 // Image data
 	unsigned char	*pixels;
 	int	 gImageWidth, gImageHeight;
+
+void initDimensions(int width, int height)
+{
+    struct cudaDeviceProp props;
+    cudaGetDeviceProperties(&cudaDeviceProp, 0);
+
+    int blockX = rint(sqrt(props.maxThreadsPerBlock / 2));
+    int blockY = blockX;
+
+    int gridX = width / blockX;
+    int gridY = width / blockY;
+
+    dimBlock.x = blockX;
+    dimBlock.y = blockY;
+    dimBlock.z = 1;
+
+    gridBlock.x = gridX;
+    gridBlock.y = gridY;
+    gridBlock.z = 1;
+}
 
 // Init image data
 void initBitmap(int width, int height)
@@ -84,20 +109,54 @@ __global__ void kernel( unsigned char *ptr, float r, float im)
     ptr[offset*4 + 3] = 255;
 }
 
+__global__ void kernelSpeedy( unsigned char *ptr, float r, float im)
+{
+    // map from blockIdx to pixel position
+    int width = blockDim.x * gridDim.x;
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    int offset = x + y*width;
+
+    // now calculate the value at that position
+    int juliaValue = julia( x, y, r, im );
+    ptr[offset*4 + 0] = 255 * juliaValue/200;
+    ptr[offset*4 + 1] = 0;
+    ptr[offset*4 + 2] = 0;
+
+
 float theReal, theImag;
 
 // Compute CUDA kernel and display image
 void Draw()
 {
 	unsigned char *dev_bitmap;
-	
+	cudaEvent_t start_event;
+    cudaEvent_t end_event;
+    float theTime;
+
 	cudaMalloc( &dev_bitmap, gImageWidth*gImageHeight*4 );
+    cudaEventCreate(&start_event);
+    cudaEventCreate(&end_event);
 
 	dim3	grid(DIM,DIM);
+
+    cudaEventRecord(start_event, 0);
+    cudaEventSynchronize(start_event);
+
 	kernel<<<grid,1>>>( dev_bitmap, theReal, theImag);
 	cudaThreadSynchronize();
+    
+    cudaEventRecord(end_event, 0);
+    cudaEventSynchronize(end_event);
+    
+    cudaEventElapsedTime(&theTime, start_event, end_event);
+    cout << "The time: " << theTime << endl;
+
 	cudaMemcpy( pixels, dev_bitmap, gImageWidth*gImageHeight*4, cudaMemcpyDeviceToHost );
 	
+    cudaEventDestroy(start_event);
+    cudaEventDestroy(end_event);
 	cudaFree( dev_bitmap );
 	
 // Dump the whole picture onto the screen.	
@@ -105,6 +164,42 @@ void Draw()
 	glClear( GL_COLOR_BUFFER_BIT );
 	glDrawPixels( gImageWidth, gImageHeight, GL_RGBA, GL_UNSIGNED_BYTE, pixels );
 	glutSwapBuffers();
+}
+
+void DrawSpeedy()
+{
+    unsigned char *dev_bitmap;
+    cudaEvent_t start_event;
+    cudaEvent_t end_event;
+    float theTime;
+
+    cudaMalloc( &dev_bitmap, gImageWidth*gImageHeight*4 );
+    cudaEventCreate(&start_event);
+    cudaEventCreate(&end_event);
+
+    cudaEventRecord(start_event, 0);
+    cudaEventSynchronize(start_event);
+
+    kernel<<<dimGrid,dimBlock>>>( dev_bitmap, theReal, theImag);
+    cudaThreadSynchronize();
+    
+    cudaEventRecord(end_event, 0);
+    cudaEventSynchronize(end_event);
+    
+    cudaEventElapsedTime(&theTime, start_event, end_event);
+    cout << "The time: " << theTime << endl;
+
+    cudaMemcpy( pixels, dev_bitmap, gImageWidth*gImageHeight*4, cudaMemcpyDeviceToHost );
+    
+    cudaEventDestroy(start_event);
+    cudaEventDestroy(end_event);
+    cudaFree( dev_bitmap );
+    
+// Dump the whole picture onto the screen.  
+    glClearColor( 0.0, 0.0, 0.0, 1.0 );
+    glClear( GL_COLOR_BUFFER_BIT );
+    glDrawPixels( gImageWidth, gImageHeight, GL_RGBA, GL_UNSIGNED_BYTE, pixels );
+    glutSwapBuffers();
 }
 
 void MouseMovedProc(int x, int y)
