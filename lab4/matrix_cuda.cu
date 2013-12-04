@@ -15,6 +15,18 @@ void simple(float *a, float *b, float *c, int N)
 		c[index] = a[index] + b[index];
 }
 
+__global__ 
+void simpleFlipped(float *a, float *b, float *c, int N) 
+{
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	int idy = blockIdx.y * blockDim.y + threadIdx.y;
+
+	int index = idy + idx*N;
+
+	if(idx < N && idy < N)
+		c[index] = a[index] + b[index];
+}
+
 void add_matrix(float *a, float *b, float *c, int N)
 {
 	int index;
@@ -22,7 +34,7 @@ void add_matrix(float *a, float *b, float *c, int N)
 	for (int i = 0; i < N; i++)
 		for (int j = 0; j < N; j++)
 		{
-			index = i + j*N;
+			index = j + i*N;
 			c[index] = a[index] + b[index];
 		}
 }
@@ -55,7 +67,7 @@ int main(int argc, char** argv)
 
 	cudaEvent_t start_event;
 	cudaEvent_t end_event;
-	float theTime;
+	float theTime, theTime2;
 
 	cudaMalloc( (void**)&ad, size );
 	cudaMalloc( (void**)&bd, size );
@@ -90,6 +102,16 @@ int main(int argc, char** argv)
   	
 	cudaEventElapsedTime(&theTime, start_event, end_event);
 
+	cudaEventRecord(start_event, 0);
+	cudaEventSynchronize(start_event);
+	
+	simpleFlipped<<<dimGrid, dimBlock>>>(ad, bd, cd, N);
+
+	cudaThreadSynchronize();
+  	cudaEventRecord(end_event, 0);
+	cudaEventSynchronize(end_event);
+	cudaEventElapsedTime(&theTime2, start_event, end_event);
+
 	cudaMemcpy( c, cd, size, cudaMemcpyDeviceToHost ); 	
 
 	/*for (int i = 0; i < N; i++)
@@ -112,11 +134,13 @@ int main(int argc, char** argv)
 	}
 
 	printf("time cuda: %f us\n", theTime*1000);
+	printf("time non-coalescing cuda: %f us\n", theTime2*1000);
 	printf("time cpu: %d us\n", t2 - t1);
+	
 
-	struct cudaDeviceProp prop;
-	cudaGetDeviceProperties(&prop, 0);
+	//struct cudaDeviceProp prop;
+	//cudaGetDeviceProperties(&prop, 0);
 
-	printf("device max threads: %d\n", prop.maxThreadsPerBlock);
-	printf("device warpSize: %d\n", prop.warpSize);
+	//printf("device max threads: %d\n", prop.maxThreadsPerBlock);
+	//printf("device warpSize: %d\n", prop.warpSize);
 }
