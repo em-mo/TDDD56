@@ -27,9 +27,21 @@ void add_matrix(float *a, float *b, float *c, int N)
 		}
 }
 
-int main()
+int main(int argc, char** argv)
 { 
-	const int N = 1024;
+	int N = 512;
+	int gridX = 32;
+	int gridY = 32;
+
+	if(argc > 0)
+		N = atoi(argv[1]);
+
+	if(argc > 1)
+	{
+		int gridSize = atoi(argv[2]);
+		gridX = gridSize;
+		gridY = gridSize;
+	}
 	float *a = new float[N*N];
 	float *b = new float[N*N];
 	float *c = new float[N*N];
@@ -40,8 +52,6 @@ int main()
 	float* cd;
 
 	int size = N*N* sizeof(float);
-	int gridX = 64;
-	int gridY = 64;
 
 	cudaEvent_t start_event;
 	cudaEvent_t end_event;
@@ -101,6 +111,12 @@ int main()
 		}
 	}
 
-	printf("time cuda: %f ms\n", theTime);
+	printf("time cuda: %f us\n", theTime*1000);
 	printf("time cpu: %d us\n", t2 - t1);
+
+	struct cudaDeviceProp prop;
+	cudaGetDeviceProperties(&prop, 0);
+
+	printf("device max threads: %d\n", prop.maxThreadsPerBlock);
+	printf("device warpSize: %d\n", prop.warpSize);
 }
