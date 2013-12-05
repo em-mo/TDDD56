@@ -3,6 +3,19 @@
 
 #include <stdio.h>
 #include "milli.h"
+
+__global__ 
+void resetter(float *a, float *b, float *c, int N) 
+{
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	int idy = blockIdx.y * blockDim.y + threadIdx.y;
+
+	int index = idx + idy*N;
+
+	if(idx < N && idy < N)
+		c[index] = 0;
+}
+
 __global__ 
 void simple(float *a, float *b, float *c, int N) 
 {
@@ -11,7 +24,7 @@ void simple(float *a, float *b, float *c, int N)
 
 	int index = idx + idy*N;
 
-	if(idx < N && idy < N)
+	//if(idx < N && idy < N)
 		c[index] = a[index] + b[index];
 }
 
@@ -23,7 +36,7 @@ void simpleFlipped(float *a, float *b, float *c, int N)
 
 	int index = idy + idx*N;
 
-	if(idx < N && idy < N)
+	//if(idx < N && idy < N)
 		c[index] = a[index] + b[index];
 }
 
@@ -87,8 +100,10 @@ int main(int argc, char** argv)
 
 	cudaMemcpy( ad, a, size, cudaMemcpyHostToDevice ); 
 	cudaMemcpy( bd, b, size, cudaMemcpyHostToDevice ); 
-
-	dim3 dimBlock((N+1)/gridX, (N+1)/gridY);
+	dim3 ddimBlock(1, 1);
+	dim3 ddimGrid( N, N );
+	resetter<<<ddimGrid, ddimBlock>>>(ad, bd, cd, N);
+	dim3 dimBlock(N/gridX, N/gridY);
 	dim3 dimGrid( gridX, gridY );
 
 	cudaEventRecord(start_event, 0);
