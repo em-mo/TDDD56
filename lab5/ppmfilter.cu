@@ -82,6 +82,40 @@ __global__ void filter(unsigned char *image, unsigned char *out, int n, int m)
 		}
 }
 
+__global__ void filter_shared(unsigned char *image, unsigned char *out, int n, int m)
+{
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	int j = blockIdx.y * blockDim.y + threadIdx.y;
+	int sumx, sumy, sumz, k, l;
+
+// printf is OK under --device-emulation
+//	printf("%d %d %d %d\n", i, j, n, m);
+
+	__shared__ unsigned char shared_image[n*m*3];
+
+	if (j < n && i < m)
+	{
+		shared_image[(i*n+j)*3+0] = image[(i*n+j)*3+0];
+		shared_image[(i*n+j)*3+1] = image[(i*n+j)*3+1];
+		shared_image[(i*n+j)*3+2] = image[(i*n+j)*3+2];
+	}
+	
+	if (i > 1 && i < m-2 && j > 1 && j < n-2)
+		{
+			// Filter kernel
+			sumx=0;sumy=0;sumz=0;
+			for(k=-2;k<3;k++)
+				for(l=-2;l<3;l++)
+				{
+					sumx += image[((i+k)*n+(j+l))*3+0];
+					sumy += image[((i+k)*n+(j+l))*3+1];
+					sumz += image[((i+k)*n+(j+l))*3+2];
+				}
+			out[(i*n+j)*3+0] = sumx/25;
+			out[(i*n+j)*3+1] = sumy/25;
+			out[(i*n+j)*3+2] = sumz/25;
+		}
+}
 
 // Compute CUDA kernel and display image
 void Draw()
