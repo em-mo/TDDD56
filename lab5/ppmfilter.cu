@@ -24,6 +24,47 @@ __global__ void filter(unsigned char *image, unsigned char *out, int n, int m)
 		out[(i*n+j)*3+2] = image[(i*n+j)*3+2];
 	}
 	
+	// Top
+	if (threadIdx.y == 0)
+	{
+
+		// Upper left
+		if (threadIdx.x == 0)
+		{
+
+		}
+		// Upper right
+		else if (threadIdx.x == blockDim.x - 1)
+		{
+		
+		}
+	}
+	else if (threadIdx.y == blockDim.y - 1)
+	{
+
+		// Lower left
+		if (threadIdx.x == 0)
+		{
+
+		}
+		// Lower right
+		else if (threadIdx.x == blockDim.x - 1)
+		{
+		
+		}
+	}
+	
+	// Left
+	if (threadIdx.x == 0)
+	{
+
+	}
+	// Right
+	else if (threadIdx.x == blockDim.x - 1)
+	{
+		
+	}
+	
 	if (i > 1 && i < m-2 && j > 1 && j < n-2)
 		{
 			// Filter kernel
