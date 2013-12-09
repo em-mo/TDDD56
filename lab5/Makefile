@@ -6,13 +6,13 @@ cpufilter: cudappmfilter.o ppmfilter.o readppm.o
 	gcc -o cpufilter ppmfilter.o readppm.o $(LDFLAGS)
 	nvcc -o cudafilter cudappmfilter.o readppm.o $(LDFLAGS)
 
-cudappmfilter.o:
+cudappmfilter.o: ppmfilter.cu
 	nvcc -c -o cudappmfilter.o ppmfilter.cu
 
-ppmfilter.o:
+ppmfilter.o: ppmfilter.c
 	gcc -c ppmfilter.c
 
-readppm.o:
+readppm.o: readppm.c
 	gcc -c readppm.c
 
 clean:
