@@ -1,8 +1,10 @@
 all: cpufilter
 
+LDFLAGS=-lglut -lGL
+
 cpufilter: cudappmfilter.o ppmfilter.o readppm.o
-	gcc -lglut -lGL -o cpufilter ppmfilter.o readppm.o
-	nvcc -lglut -lGL -o cudafilter cudappmfilter.o readppm.o
+	gcc -o cpufilter ppmfilter.o readppm.o $(LDFLAGS)
+	nvcc -o cudafilter cudappmfilter.o readppm.o $(LDFLAGS)
 
 cudappmfilter.o:
 	nvcc -c -o cudappmfilter.o ppmfilter.cu
