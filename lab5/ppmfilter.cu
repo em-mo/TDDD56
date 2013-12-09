@@ -79,12 +79,12 @@ __global__ void filter_shared(unsigned char *image, unsigned char *out, int n, i
 	{
 
 		// Lower left
-		if (threadIdx.x == 0)
+		if (threadIdx.x == 0 && blockIdx.x != 0)
 		{
 
 		}
 		// Lower right
-		else if (threadIdx.x == blockDim.x - 1)
+		else if (threadIdx.x == blockDim.x - 1 && blockIdx.x != gridDim.x - 1)
 		{
 		
 		}
