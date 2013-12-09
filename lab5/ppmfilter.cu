@@ -23,47 +23,7 @@ __global__ void filter(unsigned char *image, unsigned char *out, int n, int m)
 		out[(i*n+j)*3+1] = image[(i*n+j)*3+1];
 		out[(i*n+j)*3+2] = image[(i*n+j)*3+2];
 	}
-	
-	// Top
-	if (threadIdx.y == 0)
-	{
 
-		// Upper left
-		if (threadIdx.x == 0)
-		{
-
-		}
-		// Upper right
-		else if (threadIdx.x == blockDim.x - 1)
-		{
-		
-		}
-	}
-	else if (threadIdx.y == blockDim.y - 1)
-	{
-
-		// Lower left
-		if (threadIdx.x == 0)
-		{
-
-		}
-		// Lower right
-		else if (threadIdx.x == blockDim.x - 1)
-		{
-		
-		}
-	}
-	
-	// Left
-	if (threadIdx.x == 0)
-	{
-
-	}
-	// Right
-	else if (threadIdx.x == blockDim.x - 1)
-	{
-		
-	}
 	
 	if (i > 1 && i < m-2 && j > 1 && j < n-2)
 		{
@@ -91,7 +51,7 @@ __global__ void filter_shared(unsigned char *image, unsigned char *out, int n, i
 // printf is OK under --device-emulation
 //	printf("%d %d %d %d\n", i, j, n, m);
 
-	__shared__ unsigned char shared_image[n*m*3];
+	__shared__ unsigned char shared_image[(n + 4)*(m + 4)*3];
 
 	if (j < n && i < m)
 	{
@@ -100,6 +60,46 @@ __global__ void filter_shared(unsigned char *image, unsigned char *out, int n, i
 		shared_image[(i*n+j)*3+2] = image[(i*n+j)*3+2];
 	}
 	
+	// Top
+	if (threadIdx.y == 0 && blockIdx.y != 0)
+	{
+
+		// Upper left
+		if (threadIdx.x == 0 && blockIdx.x != 0)
+		{
+
+		}
+		// Upper right
+		else if (threadIdx.x == blockDim.x - 1  && blockIdx.x != gridDim.x - 1)
+		{
+		
+		}
+	}
+	if (threadIdx.y == blockDim.y - 1 && blockIdx.y != gridDim.y - 1)
+	{
+
+		// Lower left
+		if (threadIdx.x == 0)
+		{
+
+		}
+		// Lower right
+		else if (threadIdx.x == blockDim.x - 1)
+		{
+		
+		}
+	}
+	// Left
+	if (threadIdx.x == 0 && blockIdx.x != 0)
+	{
+
+	}
+	// Right
+	else if (threadIdx.x == blockDim.x - 1  && blockIdx.x != gridDim.x - 1)
+	{
+		
+	}
+
 	if (i > 1 && i < m-2 && j > 1 && j < n-2)
 		{
 			// Filter kernel
