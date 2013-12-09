@@ -12,6 +12,13 @@ __global__ void filter(unsigned char *image, unsigned char *out, int n, int m)
 {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	int j = blockIdx.y * blockDim.y + threadIdx.y;
+
+	int local_i = threadIdx.x + 2;
+	int local_j = threadIdx.y + 2;
+
+	int global_index = (i*n+j) * 3;
+	int local_index = (local_i*sharedDimX+local_j) * 3;
+
 	int sumx, sumy, sumz, k, l;
 
 // printf is OK under --device-emulation
@@ -123,10 +130,15 @@ void Draw()
 	unsigned char *image, *out;
 	int n, m;
 	unsigned char *dev_image, *dev_out;
-	
+	cudaEvent_t start_event;
+    cudaEvent_t end_event;
+    float theTime;
+
 	image = readppm("maskros512.ppm", &n, &m);
 	out = (unsigned char*) malloc(n*m*3);
 	
+	cudaEventCreate(&start_event);
+    cudaEventCreate(&end_event);
 	cudaMalloc( (void**)&dev_image, n*m*3);
 	cudaMalloc( (void**)&dev_out, n*m*3);
 	cudaMemcpy( dev_image, image, n*m*3, cudaMemcpyHostToDevice);
@@ -134,9 +146,19 @@ void Draw()
 	dim3 dimBlock( 16, 16 );
 	dim3 dimGrid( 32, 32 );
 	
+    cudaEventRecord(start_event, 0);
+    cudaEventSynchronize(start_event);
+
 	filter<<<dimGrid, dimBlock>>>(dev_image, dev_out, n, m);
 	cudaThreadSynchronize();
 	
+    cudaEventRecord(end_event, 0);
+    cudaEventSynchronize(end_event);
+    
+    cudaEventElapsedTime(&theTime, start_event, end_event);
+    printf("The time: %f ms\n", theTime);
+    cout << "The time: " << theTime << " ms" << endl;
+
 	cudaMemcpy( out, dev_out, n*m*3, cudaMemcpyDeviceToHost );
 	cudaFree(dev_image);
 	cudaFree(dev_out);
