@@ -10,6 +10,8 @@
 #include <GL/gl.h>
 #include <stdio.h>
 #include <math.h>
+#include <iostream>
+using namespace std;
 
 // Dimensions
 dim3 dimBlock;
@@ -22,9 +24,10 @@ dim3 dimGrid;
 void initDimensions(int width, int height)
 {
     struct cudaDeviceProp props;
-    cudaGetDeviceProperties(&cudaDeviceProp, 0);
+    cudaGetDeviceProperties(&props, 0);
 
-    int blockX = rint(sqrt(props.maxThreadsPerBlock / 2));
+    int blockX = rint(sqrt(props.maxThreadsPerBlock) / 2);
+	//blockX = 16;
     int blockY = blockX;
 
     int gridX = width / blockX;
@@ -34,9 +37,11 @@ void initDimensions(int width, int height)
     dimBlock.y = blockY;
     dimBlock.z = 1;
 
-    gridBlock.x = gridX;
-    gridBlock.y = gridY;
-    gridBlock.z = 1;
+    dimGrid.x = gridX;
+    dimGrid.y = gridY;
+    dimGrid.z = 1;
+
+    cout << "dims " << blockX << endl;
 }
 
 // Init image data
@@ -123,7 +128,8 @@ __global__ void kernelSpeedy( unsigned char *ptr, float r, float im)
     ptr[offset*4 + 0] = 255 * juliaValue/200;
     ptr[offset*4 + 1] = 0;
     ptr[offset*4 + 2] = 0;
-
+    ptr[offset*4 + 3] = 255;
+}
 
 float theReal, theImag;
 
@@ -151,7 +157,7 @@ void Draw()
     cudaEventSynchronize(end_event);
     
     cudaEventElapsedTime(&theTime, start_event, end_event);
-    cout << "The time: " << theTime << endl;
+    cout << "The time: " << theTime << "ms" << endl;
 
 	cudaMemcpy( pixels, dev_bitmap, gImageWidth*gImageHeight*4, cudaMemcpyDeviceToHost );
 	
@@ -180,14 +186,14 @@ void DrawSpeedy()
     cudaEventRecord(start_event, 0);
     cudaEventSynchronize(start_event);
 
-    kernel<<<dimGrid,dimBlock>>>( dev_bitmap, theReal, theImag);
+    kernelSpeedy<<<dimGrid,dimBlock>>>( dev_bitmap, theReal, theImag);
     cudaThreadSynchronize();
     
     cudaEventRecord(end_event, 0);
     cudaEventSynchronize(end_event);
     
     cudaEventElapsedTime(&theTime, start_event, end_event);
-    cout << "The time: " << theTime << endl;
+    cout << "The time: " << theTime << "ms" <<endl;
 
     cudaMemcpy( pixels, dev_bitmap, gImageWidth*gImageHeight*4, cudaMemcpyDeviceToHost );
     
@@ -206,7 +212,7 @@ void MouseMovedProc(int x, int y)
 {
 	theReal = -0.5 + (float)(x-400) / 500.0;
 	theImag = -0.5 + (float)(y-400) / 500.0;
-	printf("real = %f, imag = %f\n", theReal, theImag);
+	//printf("real = %f, imag = %f\n", theReal, theImag);
 	glutPostRedisplay ();
 }
 
@@ -217,9 +223,10 @@ int main( int argc, char** argv)
 	glutInitDisplayMode( GLUT_DOUBLE | GLUT_RGBA );
 	glutInitWindowSize( DIM, DIM );
 	glutCreateWindow("CUDA on live GL");
-	glutDisplayFunc(Draw);
+	glutDisplayFunc(DrawSpeedy);
 	glutPassiveMotionFunc(MouseMovedProc);
 	
+	initDimensions(DIM, DIM);
 	initBitmap(DIM, DIM);
 	
 	glutMainLoop();
