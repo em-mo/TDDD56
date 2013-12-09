@@ -141,6 +141,8 @@ __global__ void filter_shared(unsigned char *image, unsigned char *out, int n, i
 		set_pixel(shared_image, image, local_index+6, global_index+6);
 	}
 
+	__syncthreads();
+
 	if (i > 1 && i < m-2 && j > 1 && j < n-2)
 		{
 			// Filter kernel
@@ -148,13 +150,14 @@ __global__ void filter_shared(unsigned char *image, unsigned char *out, int n, i
 			for(k=-2;k<3;k++)
 				for(l=-2;l<3;l++)
 				{
-					sumx += image[((i+k)*n+(j+l))*3+0];
-					sumy += image[((i+k)*n+(j+l))*3+1];
-					sumz += image[((i+k)*n+(j+l))*3+2];
+					int index = local_index+(3*k*sharedDimX)+3*l;
+					sumx += shared_image[local_index+0];
+					sumy += shared_image[local_index+1];
+					sumz += shared_image[local_index+2];
 				}
-			out[(i*n+j)*3+0] = sumx/25;
-			out[(i*n+j)*3+1] = sumy/25;
-			out[(i*n+j)*3+2] = sumz/25;
+			out[global_index+0] = sumx/25;
+			out[global_index+1] = sumy/25;
+			out[global_index+2] = sumz/25;
 		}
 }
 
