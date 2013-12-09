@@ -61,22 +61,22 @@ __global__ void filter_shared(unsigned char *image, unsigned char *out, int n, i
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	int j = blockIdx.y * blockDim.y + threadIdx.y;
 	int sumx, sumy, sumz, k, l;
-	int sharedDimX = blockDim.x + 4;
-	int sharedDimY = blockDim.y + 4;
 // printf is OK under --device-emulation
 
 //	printf("%d %d %d %d\n", i, j, n, m);
-	int local_i = threadIdx.x + 2;
-	int local_j = threadIdx.y + 2;
+	int local_x = threadIdx.x + 2;
+	int local_y = threadIdx.y + 2;
 
-	int global_index = (i*n+j) * 3;
-	int local_index = (local_i*sharedDimX+local_j) * 3;
+	int global_index = (j*n+i) * 3;
+	int local_index = (local_y*SHAREDMEMSIZE+local_x) * 3;
 
 	__shared__ unsigned char shared_image[SHAREDMEMSIZE*SHAREDMEMSIZE*3];
-
 	if (j < n && i < m)
 	{
-		set_pixel(shared_image, image, local_index, global_index);
+		// set_pixel(shared_image, image, local_index, global_index);
+		shared_image[local_index+0] = image[global_index+0];
+		shared_image[local_index+1] = image[global_index+1];
+		shared_image[local_index+2] = image[global_index+2];
 	}
 	
 	// Top
@@ -140,9 +140,9 @@ __global__ void filter_shared(unsigned char *image, unsigned char *out, int n, i
 		set_pixel(shared_image, image, local_index+3, global_index+3);
 		set_pixel(shared_image, image, local_index+6, global_index+6);
 	}
-
+	
 	__syncthreads();
-
+	
 	if (i > 1 && i < m-2 && j > 1 && j < n-2)
 		{
 			// Filter kernel
@@ -150,10 +150,10 @@ __global__ void filter_shared(unsigned char *image, unsigned char *out, int n, i
 			for(k=-2;k<3;k++)
 				for(l=-2;l<3;l++)
 				{
-					int index = local_index+(3*k*sharedDimX)+3*l;
-					sumx += shared_image[local_index+0];
-					sumy += shared_image[local_index+1];
-					sumz += shared_image[local_index+2];
+					int index = local_index+(3*k*SHAREDMEMSIZE)+3*l;
+					sumx += shared_image[index+0];
+					sumy += shared_image[index+1];
+					sumz += shared_image[index+2];
 				}
 			out[global_index+0] = sumx/25;
 			out[global_index+1] = sumy/25;
@@ -188,17 +188,20 @@ void Draw()
     cudaEventRecord(start_event, 0);
     cudaEventSynchronize(start_event);
 
-	filter<<<dimGrid, dimBlock>>>(dev_image, dev_out, n, m);
+	filter_shared<<<dimGrid, dimBlock>>>(dev_image, dev_out, n, m);
 	cudaThreadSynchronize();
 	
     cudaEventRecord(end_event, 0);
     cudaEventSynchronize(end_event);
     
     cudaEventElapsedTime(&theTime, start_event, end_event);
-    
+    printf("The time: %f ms\n", theTime);
+
 	cudaMemcpy( out, dev_out, n*m*3, cudaMemcpyDeviceToHost );
 	cudaFree(dev_image);
 	cudaFree(dev_out);
+    cudaEventDestroy(start_event);
+    cudaEventDestroy(end_event);
 	
 // Dump the whole picture onto the screen.	
 	glClearColor( 0.0, 0.0, 0.0, 1.0 );

@@ -17,4 +17,5 @@ readppm.o: readppm.c
 
 clean:
 	rm cpufilter
+	rm cudafilter
 	rm *.o
