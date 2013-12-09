@@ -78,31 +78,49 @@ __global__ void filter_shared(unsigned char *image, unsigned char *out, int n, i
 	// Top
 	if (threadIdx.y == 0 && blockIdx.y != 0)
 	{
-		set_pixel(shared_image, image, local_i-sharedDimX, global_index-n);
-		set_pixel(shared_image, image, local_i-(2*sharedDimX), global_index-(2*n));
+		set_pixel(shared_image, image, local_i-(3*sharedDimX), global_index-(3*n));
+		set_pixel(shared_image, image, local_i-(6*sharedDimX), global_index-(6*n));
 
 		// Upper left
 		if (threadIdx.x == 0 && blockIdx.x != 0)
 		{
+			set_pixel(shared_image, image, local_i-(3*sharedDimX)-3, global_index-(3*n)-3);
+			set_pixel(shared_image, image, local_i-(3*sharedDimX)-6, global_index-(3*n)-6);
+
+			set_pixel(shared_image, image, local_i-(6*sharedDimX)-3, global_index-(6*n)-3);
+			set_pixel(shared_image, image, local_i-(6*sharedDimX)-6, global_index-(6*n)-6);
 		}
 		// Upper right
 		else if (threadIdx.x == blockDim.x - 1  && blockIdx.x != gridDim.x - 1)
 		{
-		
+			set_pixel(shared_image, image, local_i-(3*sharedDimX)+3, global_index-(3*n)+3);
+			set_pixel(shared_image, image, local_i-(3*sharedDimX)+6, global_index-(3*n)+6);
+
+			set_pixel(shared_image, image, local_i-(6*sharedDimX)+3, global_index-(6*n)+3);
+			set_pixel(shared_image, image, local_i-(6*sharedDimX)+6, global_index-(6*n)+6);
 		}
 	}
 	if (threadIdx.y == blockDim.y - 1 && blockIdx.y != gridDim.y - 1)
 	{
-		set_pixel(shared_image, image, local_i+sharedDimX, global_index+n);
-		set_pixel(shared_image, image, local_i+(2*sharedDimX), global_index+(2*n));
+		set_pixel(shared_image, image, local_i+(3*sharedDimX), global_index+(3*n));
+		set_pixel(shared_image, image, local_i+(6*sharedDimX), global_index+(6*n));
 		// Lower left
 		if (threadIdx.x == 0 && blockIdx.x != 0)
 		{
+			set_pixel(shared_image, image, local_i+(3*sharedDimX)-3, global_index+(3*n)-3);
+			set_pixel(shared_image, image, local_i+(3*sharedDimX)-6, global_index+(3*n)-6);
 
+			set_pixel(shared_image, image, local_i+(6*sharedDimX)-3, global_index+(6*n)-3);
+			set_pixel(shared_image, image, local_i+(6*sharedDimX)-6, global_index+(6*n)-6);
 		}
 		// Lower right
 		else if (threadIdx.x == blockDim.x - 1 && blockIdx.x != gridDim.x - 1)
 		{
+			set_pixel(shared_image, image, local_i+(3*sharedDimX)+3, global_index+(3*n)+3);
+			set_pixel(shared_image, image, local_i+(3*sharedDimX)+6, global_index+(3*n)+6);
+
+			set_pixel(shared_image, image, local_i+(6*sharedDimX)+3, global_index+(6*n)+3);
+			set_pixel(shared_image, image, local_i+(6*sharedDimX)+6, global_index+(6*n)+6);
 		
 		}
 	}
@@ -115,14 +133,8 @@ __global__ void filter_shared(unsigned char *image, unsigned char *out, int n, i
 	// Right
 	else if (threadIdx.x == blockDim.x - 1  && blockIdx.x != gridDim.x - 1)
 	{
-	
-		shared_image[(i*n+j+1)*3+0] = image[(i*n+j+1)*3+0];
-		shared_image[(i*n+j+1)*3+1] = image[(i*n+j+1)*3+1];
-		shared_image[(i*n+j+1)*3+2] = image[(i*n+j+1)*3+2];
-
-		shared_image[(i*n+j+2)*3+0] = image[(i*n+j+2)*3+0];
-		shared_image[(i*n+j+2)*3+1] = image[(i*n+j+2)*3+1];
-		shared_image[(i*n+j+2)*3+2] = image[(i*n+j+2)*3+2];	
+		set_pixel(shared_image, image, local_i+3, global_index+3);
+		set_pixel(shared_image, image, local_i+6, global_index+6);
 	}
 
 	if (i > 1 && i < m-2 && j > 1 && j < n-2)
