@@ -70,7 +70,7 @@ __global__ void filter_shared(unsigned char *image, unsigned char *out, int n, i
 	int global_index = (j*n+i) * 3;
 	int local_index = (local_y*SHAREDMEMSIZE+local_x) * 3;
 
-	__shared__ unsigned char shared_image[SHAREDMEMSIZE*SHAREDMEMSIZE*6];
+	__shared__ unsigned char shared_image[SHAREDMEMSIZE*SHAREDMEMSIZE*3];
 	if (j < n && i < m)
 	{
 		set_pixel(shared_image, image, local_index, global_index);
