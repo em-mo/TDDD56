@@ -190,9 +190,11 @@ void Draw()
     cudaEventRecord(start_event, 0);
     cudaEventSynchronize(start_event);
 
-	filter<<<ourGrid, ourBlock>>>(dev_image, dev_out, n, m);
+	filter<<<dimGrid, dimBlock>>>(dev_image, dev_out, n, m);
 	cudaThreadSynchronize();
 	
+	cudaMemset(dev_out, 0, n*m*3);
+
     cudaEventRecord(end_event, 0);
     cudaEventSynchronize(end_event);
     
