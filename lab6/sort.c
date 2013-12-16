@@ -148,19 +148,22 @@ int gpu_Sort(unsigned int *data, unsigned int length)
 {
   cl_int ciErrNum = CL_SUCCESS;
   size_t localWorkSize, globalWorkSize;
-  cl_mem io_data;
+  cl_mem in_data;
+  cl_mem out_data;
   printf("GPU sorting.\n");
   
-  io_data = clCreateBuffer(cxGPUContext, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, length * sizeof(unsigned int), data, &ciErrNum);
+    in_data = clCreateBuffer(cxGPUContext, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, length * sizeof(unsigned int), data, &ciErrNum);
     printCLError(ciErrNum,7);
-
-    if (length<512) localWorkSize  = length;
-    else            localWorkSize  = 512;
+    out_data = clCreateBuffer(cxGPUContext, CL_MEM_WRITE_ONLY, length * sizeof(unsigned int), NULL, NULL);
+    int worksize = 512;
+    if (length<worksize) localWorkSize  = length;
+    else            localWorkSize  = worksize;
     globalWorkSize = length;
 
     // set the args values
-    ciErrNum  = clSetKernelArg(gpgpuSort, 0, sizeof(cl_mem),  (void *) &io_data);
-    ciErrNum |= clSetKernelArg(gpgpuSort, 1, sizeof(cl_uint), (void *) &length);
+    ciErrNum  = clSetKernelArg(gpgpuSort, 0, sizeof(cl_mem),  (void *) &in_data);
+    ciErrNum |= clSetKernelArg(gpgpuSort, 1, sizeof(cl_mem),  (void *) &out_data);
+    ciErrNum |= clSetKernelArg(gpgpuSort, 2, sizeof(cl_uint), (void *) &length);
     printCLError(ciErrNum,8);
 
     gettimeofday(&t_s_gpu, NULL);
@@ -173,12 +176,13 @@ int gpu_Sort(unsigned int *data, unsigned int length)
     gettimeofday(&t_e_gpu, NULL);
     printCLError(ciErrNum,10);
 
-  ciErrNum = clEnqueueReadBuffer(commandQueue, io_data, CL_TRUE, 0, length * sizeof(unsigned int), data, 0, NULL, &event);
+  ciErrNum = clEnqueueReadBuffer(commandQueue, out_data, CL_TRUE, 0, length * sizeof(unsigned int), data, 0, NULL, &event);
     printCLError(ciErrNum,11);
     clWaitForEvents(1, &event); // Synch
   printCLError(ciErrNum,10);
     
-  clReleaseMemObject(io_data);
+  clReleaseMemObject(in_data);
+  clReleaseMemObject(out_data);
   return ciErrNum;
 }
 
