@@ -127,7 +127,7 @@ int gpu_WL(unsigned char *image, unsigned char *data, unsigned int height, unsig
   size_t localWorkSize[2];
   size_t globalWorkSize[2];
   cl_mem in_data, out_data;
-  int length = height * width;
+  int length = height * width * 3;
   printf("GPU processing.\n");
   
   in_data = clCreateBuffer(cxGPUContext, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, length * sizeof(unsigned char), image, &ciErrNum);
