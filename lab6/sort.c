@@ -18,8 +18,8 @@
 
 
 // Size of data!
-#define dataWidth 32
-#define dataHeight 32
+#define dataWidth 64
+#define dataHeight 64
 
 
 // global variables
@@ -155,7 +155,7 @@ int gpu_Sort(unsigned int *data, unsigned int length)
     in_data = clCreateBuffer(cxGPUContext, CL_MEM_READ_ONLY | CL_MEM_USE_HOST_PTR, length * sizeof(unsigned int), data, &ciErrNum);
     printCLError(ciErrNum,7);
     out_data = clCreateBuffer(cxGPUContext, CL_MEM_WRITE_ONLY, length * sizeof(unsigned int), NULL, NULL);
-    int worksize = 512;
+    int worksize = 256;
     if (length<worksize) localWorkSize  = length;
     else            localWorkSize  = worksize;
     globalWorkSize = length;

@@ -2,7 +2,7 @@
  * Rank sorting in sorting OpenCL
  * This kernel has a bug. What?
  */
-#define WORK_SIZE 512
+#define WORK_SIZE 256
 
 __kernel void sort(__global unsigned int *data, __global unsigned int *out, const unsigned int length)
 { 
@@ -16,13 +16,14 @@ __kernel void sort(__global unsigned int *data, __global unsigned int *out, cons
 
     val = data[get_global_id(0)];
 
-    for (j = 0; j < get_global_size(0); j += WORK_SIZE)
+    for (j = 0; j < length; j += WORK_SIZE)
     {	
     	buffer[get_local_id(0)] = data[j+get_local_id(0)];
-    	barrier(CLK_LOCAL_MEM_FENCE);
+    	barrier(CLK_GLOBAL_MEM_FENCE);
 		for (i = 0; i < WORK_SIZE; i++)
         	if (val > buffer[i])
       			pos++;
+      	barrier(CLK_GLOBAL_MEM_FENCE);
   	}
 
     out[pos]=val;

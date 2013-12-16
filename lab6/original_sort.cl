@@ -3,7 +3,7 @@
  * This kernel has a bug. What?
  */
 
-__kernel void sort(__global unsigned int *data, const unsigned int length)
+__kernel void sort(__global unsigned int *data, __global unsigned int *out, const unsigned int length)
 { 
   unsigned int pos = 0;
   unsigned int i;
@@ -15,5 +15,5 @@ __kernel void sort(__global unsigned int *data, const unsigned int length)
       pos++;
 
   val = data[get_global_id(0)];
-  data[pos]=val;
+  out[pos]=val;
 }
