@@ -33,13 +33,34 @@ struct timeval t_s_cpu, t_e_cpu,t_s_gpu, t_e_gpu;
 
 
 // Process image on CPU
-void cpu_WL(unsigned char *image, unsigned char *data, unsigned int length)
+void cpu_WL(unsigned char *image, unsigned char *data, unsigned int height, unsigned int width)
 {
-  unsigned int i;
-  
-  for (i = 0; i < length; i++) // For all elements
+  unsigned int i, j;
+  for (i = 0; i < height; i += 2) // For all elements
   {
-    data[i] = 255 - image[i];
+    for (j = 0; j < width; j += 2)
+    {
+      unsigned int index1 = i * (width * 3) + (j * 3);
+      unsigned int index2 = i * (width * 3) + ((j + 1) * 3);
+      unsigned int index3 = (i + 1) * (width * 3) + (j * 3);
+      unsigned int index4 = (i + 1) * (width * 3) + ((j + 1) * 3);
+
+      data[index1 + 0] = (image[index1 + 0] + image[index2 + 0] + image[index3 + 0] + image[index4 + 0]) / 4;
+      data[index1 + 1] = (image[index1 + 1] + image[index2 + 1] + image[index3 + 1] + image[index4 + 1]) / 4;
+      data[index1 + 2] = (image[index1 + 2] + image[index2 + 2] + image[index3 + 2] + image[index4 + 2]) / 4;
+
+      data[index2 + 0] = (image[index1 + 0] + image[index2 + 0] - image[index3 + 0] - image[index4 + 0]) / 4;
+      data[index2 + 1] = (image[index1 + 1] + image[index2 + 1] - image[index3 + 1] - image[index4 + 1]) / 4;
+      data[index2 + 2] = (image[index1 + 2] + image[index2 + 2] - image[index3 + 2] - image[index4 + 2]) / 4;
+
+      data[index3 + 0] = (image[index1 + 0] - image[index2 + 0] + image[index3 + 0] - image[index4 + 0]) / 4;
+      data[index3 + 1] = (image[index1 + 1] - image[index2 + 1] + image[index3 + 1] - image[index4 + 1]) / 4;
+      data[index3 + 2] = (image[index1 + 2] - image[index2 + 2] + image[index3 + 2] - image[index4 + 2]) / 4;
+
+      data[index4 + 0] = (image[index1 + 0] - image[index2 + 0] - image[index3 + 0] + image[index4 + 0]) / 4;
+      data[index4 + 1] = (image[index1 + 1] - image[index2 + 1] - image[index3 + 1] + image[index4 + 1]) / 4;
+      data[index4 + 2] = (image[index1 + 2] - image[index2 + 2] - image[index3 + 2] + image[index4 + 2]) / 4;
+    }
   }
 }
 
@@ -100,11 +121,13 @@ int init_OpenCL()
   return 0;
 }
 
-int gpu_WL(unsigned char *image, unsigned char *data, unsigned int length)
+int gpu_WL(unsigned char *image, unsigned char *data, unsigned int height, unsigned int width)
 {
   cl_int ciErrNum = CL_SUCCESS;
-  size_t localWorkSize, globalWorkSize;
+  size_t localWorkSize[2];
+  size_t globalWorkSize[2];
   cl_mem in_data, out_data;
+  int length = height * width;
   printf("GPU processing.\n");
   
   in_data = clCreateBuffer(cxGPUContext, CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, length * sizeof(unsigned char), image, &ciErrNum);
@@ -112,27 +135,30 @@ int gpu_WL(unsigned char *image, unsigned char *data, unsigned int length)
   out_data = clCreateBuffer(cxGPUContext, CL_MEM_WRITE_ONLY, length * sizeof(unsigned char), NULL, &ciErrNum);
     printCLError(ciErrNum,7);
 
-    if (length<512) localWorkSize  = length;
-    else            localWorkSize  = 512;
-    globalWorkSize = length;
+    int worksize = 16;
+    localWorkSize[0] = worksize;
+    localWorkSize[1] = worksize;
+
+    globalWorkSize[0] = width / 2;
+    globalWorkSize[1] = height / 2;
 
     // set the args values
     ciErrNum  = clSetKernelArg(myKernel, 0, sizeof(cl_mem),  (void *) &in_data);
     ciErrNum |= clSetKernelArg(myKernel, 1, sizeof(cl_mem),  (void *) &out_data);
-    ciErrNum |= clSetKernelArg(myKernel, 2, sizeof(cl_uint), (void *) &length);
+    ciErrNum |= clSetKernelArg(myKernel, 2, sizeof(cl_uint), (void *) &width);
     printCLError(ciErrNum,8);
 
     gettimeofday(&t_s_gpu, NULL);
     
     cl_event event;
-    ciErrNum = clEnqueueNDRangeKernel(commandQueue, myKernel, 1, NULL, &globalWorkSize, &localWorkSize, 0, NULL, &event);
+    ciErrNum = clEnqueueNDRangeKernel(commandQueue, myKernel, 2, NULL, globalWorkSize, localWorkSize, 0, NULL, &event);
     printCLError(ciErrNum,9);
     
     clWaitForEvents(1, &event); // Synch
     gettimeofday(&t_e_gpu, NULL);
     printCLError(ciErrNum,10);
 
-  ciErrNum = clEnqueueReadBuffer(commandQueue, out_data, CL_TRUE, 0, length * sizeof(unsigned char), data, 0, NULL, &event);
+    ciErrNum = clEnqueueReadBuffer(commandQueue, out_data, CL_TRUE, 0, length * sizeof(unsigned char), data, 0, NULL, &event);
     printCLError(ciErrNum,11);
     clWaitForEvents(1, &event); // Synch
   printCLError(ciErrNum,10);
@@ -189,11 +215,11 @@ void computeImages()
   }
   
   gettimeofday(&t_s_cpu, NULL);
-  cpu_WL(image, data_cpu,length);
+  cpu_WL(image, data_cpu,dataHeight, dataWidth);
   gettimeofday(&t_e_cpu, NULL);
 
   gettimeofday(&t_s_gpu, NULL);
-  gpu_WL(image, data_gpu,length);
+  gpu_WL(image, data_gpu,dataHeight, dataWidth);
   gettimeofday(&t_e_gpu, NULL);
 
   printf("\n time needed: \nCPU: %i us\n",(int)(t_e_cpu.tv_usec-t_s_cpu.tv_usec + (t_e_cpu.tv_sec-t_s_cpu.tv_sec)*1000000));
