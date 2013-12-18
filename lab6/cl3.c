@@ -38,28 +38,36 @@ void cpu_WL(unsigned char *image, unsigned char *data, unsigned int height, unsi
   unsigned int i, j;
   for (i = 0; i < height; i += 2) // For all elements
   {
-    for (j = 0; j < width; j += 2)
+    int k, l;
+    l = k = 0;
+
+    for (j = 0; j < width; j += 2, ++k, ++l)
     {
       unsigned int index1 = i * (width * 3) + (j * 3);
       unsigned int index2 = i * (width * 3) + ((j + 1) * 3);
       unsigned int index3 = (i + 1) * (width * 3) + (j * 3);
       unsigned int index4 = (i + 1) * (width * 3) + ((j + 1) * 3);
+      
+      unsigned int outdex1 = k * (width * 3) + (l * 3);
+      unsigned int outdex2 = outdex1 + (width * 3) / 2;
+      unsigned int outdex3 = outdex1 + (height * 3) / 2;
+      unsigned int outdex4 = outdex1 + (width * 3) / 2 + (height * 3);
 
-      data[index1 + 0] = (image[index1 + 0] + image[index2 + 0] + image[index3 + 0] + image[index4 + 0]) / 4;
-      data[index1 + 1] = (image[index1 + 1] + image[index2 + 1] + image[index3 + 1] + image[index4 + 1]) / 4;
-      data[index1 + 2] = (image[index1 + 2] + image[index2 + 2] + image[index3 + 2] + image[index4 + 2]) / 4;
+      data[outdex1 + 0] = (image[index1 + 0] + image[index2 + 0] + image[index3 + 0] + image[index4 + 0]) / 4;
+      data[outdex1 + 1] = (image[index1 + 1] + image[index2 + 1] + image[index3 + 1] + image[index4 + 1]) / 4;
+      data[outdex1 + 2] = (image[index1 + 2] + image[index2 + 2] + image[index3 + 2] + image[index4 + 2]) / 4;
 
-      data[index2 + 0] = (image[index1 + 0] + image[index2 + 0] - image[index3 + 0] - image[index4 + 0]) / 4;
-      data[index2 + 1] = (image[index1 + 1] + image[index2 + 1] - image[index3 + 1] - image[index4 + 1]) / 4;
-      data[index2 + 2] = (image[index1 + 2] + image[index2 + 2] - image[index3 + 2] - image[index4 + 2]) / 4;
+      data[outdex2 + 0] = (image[index1 + 0] + image[index2 + 0] - image[index3 + 0] - image[index4 + 0]) / 4;
+      data[outdex2 + 1] = (image[index1 + 1] + image[index2 + 1] - image[index3 + 1] - image[index4 + 1]) / 4;
+      data[outdex2 + 2] = (image[index1 + 2] + image[index2 + 2] - image[index3 + 2] - image[index4 + 2]) / 4;
 
-      data[index3 + 0] = (image[index1 + 0] - image[index2 + 0] + image[index3 + 0] - image[index4 + 0]) / 4;
-      data[index3 + 1] = (image[index1 + 1] - image[index2 + 1] + image[index3 + 1] - image[index4 + 1]) / 4;
-      data[index3 + 2] = (image[index1 + 2] - image[index2 + 2] + image[index3 + 2] - image[index4 + 2]) / 4;
+      data[outdex3 + 0] = (image[index1 + 0] - image[index2 + 0] + image[index3 + 0] - image[index4 + 0]) / 4;
+      data[outdex3 + 1] = (image[index1 + 1] - image[index2 + 1] + image[index3 + 1] - image[index4 + 1]) / 4;
+      data[outdex3 + 2] = (image[index1 + 2] - image[index2 + 2] + image[index3 + 2] - image[index4 + 2]) / 4;
 
-      data[index4 + 0] = (image[index1 + 0] - image[index2 + 0] - image[index3 + 0] + image[index4 + 0]) / 4;
-      data[index4 + 1] = (image[index1 + 1] - image[index2 + 1] - image[index3 + 1] + image[index4 + 1]) / 4;
-      data[index4 + 2] = (image[index1 + 2] - image[index2 + 2] - image[index3 + 2] + image[index4 + 2]) / 4;
+      data[outdex4 + 0] = (image[index1 + 0] - image[index2 + 0] - image[index3 + 0] + image[index4 + 0]) / 4;
+      data[outdex4 + 1] = (image[index1 + 1] - image[index2 + 1] - image[index3 + 1] + image[index4 + 1]) / 4;
+      data[outdex4 + 2] = (image[index1 + 2] - image[index2 + 2] - image[index3 + 2] + image[index4 + 2]) / 4;
     }
   }
 }
