@@ -32,45 +32,55 @@ static size_t noWG;
 struct timeval t_s_cpu, t_e_cpu,t_s_gpu, t_e_gpu;
 
 
+#define HALF_WIDTH (256*3)
+#define HALF_HEIGHT (512*256*3)
+
 // Process image on CPU
 void cpu_WL(unsigned char *image, unsigned char *data, unsigned int height, unsigned int width)
 {
   unsigned int i, j;
+  unsigned int k, l;
+  k = 0;
+
+  unsigned int step_x = 3;
+  unsigned int step_y = width * 3;
+
   for (i = 0; i < height; i += 2) // For all elements
   {
-    int k, l;
-    l = k = 0;
+    l = 0;
 
-    for (j = 0; j < width; j += 2, ++k, ++l)
+    for (j = 0; j < width; j += 2)
     {
       unsigned int index1 = i * (width * 3) + (j * 3);
-      unsigned int index2 = i * (width * 3) + ((j + 1) * 3);
-      unsigned int index3 = (i + 1) * (width * 3) + (j * 3);
-      unsigned int index4 = (i + 1) * (width * 3) + ((j + 1) * 3);
+      unsigned int index2 = index1 + step_x;
+      unsigned int index3 = index1 + step_y;
+      unsigned int index4 = index3 + step_x;
       
       unsigned int outdex1 = k * (width * 3) + (l * 3);
-      unsigned int outdex2 = outdex1 + (width * 3) / 2;
-      unsigned int outdex3 = outdex1 + (height * 3) / 2;
-      unsigned int outdex4 = outdex1 + (width * 3) / 2 + (height * 3);
+      unsigned int outdex2 = outdex1 + HALF_WIDTH;
+      unsigned int outdex3 = outdex1 + HALF_HEIGHT;
+      unsigned int outdex4 = outdex2 + HALF_HEIGHT;
 
-      data[outdex1 + 0] = (image[index1 + 0] + image[index2 + 0] + image[index3 + 0] + image[index4 + 0]) / 4;
-      data[outdex1 + 1] = (image[index1 + 1] + image[index2 + 1] + image[index3 + 1] + image[index4 + 1]) / 4;
-      data[outdex1 + 2] = (image[index1 + 2] + image[index2 + 2] + image[index3 + 2] + image[index4 + 2]) / 4;
+      data[outdex1 + 0] = (image[index1 + 0] + image[index2 + 0] + image[index3 + 0] + image[index4 + 0]) >> 2;
+      data[outdex1 + 1] = (image[index1 + 1] + image[index2 + 1] + image[index3 + 1] + image[index4 + 1]) >> 2;
+      data[outdex1 + 2] = (image[index1 + 2] + image[index2 + 2] + image[index3 + 2] + image[index4 + 2]) >> 2;
 
-      data[outdex2 + 0] = (image[index1 + 0] + image[index2 + 0] - image[index3 + 0] - image[index4 + 0]) / 4;
-      data[outdex2 + 1] = (image[index1 + 1] + image[index2 + 1] - image[index3 + 1] - image[index4 + 1]) / 4;
-      data[outdex2 + 2] = (image[index1 + 2] + image[index2 + 2] - image[index3 + 2] - image[index4 + 2]) / 4;
+      data[outdex2 + 0] = ((image[index1 + 0] + image[index2 + 0] - image[index3 + 0] - image[index4 + 0]) >> 3) + 128;
+      data[outdex2 + 1] = ((image[index1 + 1] + image[index2 + 1] - image[index3 + 1] - image[index4 + 1]) >> 3) + 128;
+      data[outdex2 + 2] = ((image[index1 + 2] + image[index2 + 2] - image[index3 + 2] - image[index4 + 2]) >> 3) + 128;
 
-      data[outdex3 + 0] = (image[index1 + 0] - image[index2 + 0] + image[index3 + 0] - image[index4 + 0]) / 4;
-      data[outdex3 + 1] = (image[index1 + 1] - image[index2 + 1] + image[index3 + 1] - image[index4 + 1]) / 4;
-      data[outdex3 + 2] = (image[index1 + 2] - image[index2 + 2] + image[index3 + 2] - image[index4 + 2]) / 4;
+      data[outdex3 + 0] = ((image[index1 + 0] - image[index2 + 0] + image[index3 + 0] - image[index4 + 0]) >> 3) + 128;
+      data[outdex3 + 1] = ((image[index1 + 1] - image[index2 + 1] + image[index3 + 1] - image[index4 + 1]) >> 3) + 128;
+      data[outdex3 + 2] = ((image[index1 + 2] - image[index2 + 2] + image[index3 + 2] - image[index4 + 2]) >> 3) + 128;
 
-      data[outdex4 + 0] = (image[index1 + 0] - image[index2 + 0] - image[index3 + 0] + image[index4 + 0]) / 4;
-      data[outdex4 + 1] = (image[index1 + 1] - image[index2 + 1] - image[index3 + 1] + image[index4 + 1]) / 4;
-      data[outdex4 + 2] = (image[index1 + 2] - image[index2 + 2] - image[index3 + 2] + image[index4 + 2]) / 4;
+      data[outdex4 + 0] = ((image[index1 + 0] - image[index2 + 0] - image[index3 + 0] + image[index4 + 0]) >> 3) + 128;
+      data[outdex4 + 1] = ((image[index1 + 1] - image[index2 + 1] - image[index3 + 1] + image[index4 + 1]) >> 3) + 128;
+      data[outdex4 + 2] = ((image[index1 + 2] - image[index2 + 2] - image[index3 + 2] + image[index4 + 2]) >> 3) + 128;
+
+      l++;
     }
+    k++;
   }
-}
 
 int init_OpenCL()
 {
